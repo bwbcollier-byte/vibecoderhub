@@ -120,7 +120,16 @@ export default [
   // app/global-error.tsx must work even if Tailwind / the root layout is
   // broken, so it uses inline-style hex literals as a deliberate last resort.
   {
-    files: ['lib/tokens.ts', 'tailwind.config.ts', 'app/global-error.tsx'],
+    files: [
+      'lib/tokens.ts',
+      'tailwind.config.ts',
+      'app/global-error.tsx',
+      // OG images render in the Edge runtime with no access to our CSS
+      // cascade. They inline the canonical hex values from lib/tokens.ts
+      // as a deliberate last resort.
+      'app/opengraph-image.tsx',
+      'app/**/opengraph-image.tsx',
+    ],
     rules: {
       'no-restricted-syntax': 'off',
     },

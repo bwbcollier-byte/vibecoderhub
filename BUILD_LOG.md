@@ -185,6 +185,79 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 8 — SEO infra + shared chassis + 6-type batch (S03-S08)
+
+**Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**SEO infra:**
+- `app/sitemap.ts` — dynamic sitemap covering marketing + indexable directory routes + every seed-data detail page (8 models + 8 MCPs to start). Will pick up the new types automatically (just add to staticPaths or pull from the seed configs).
+- `app/robots.ts` — allow `/`, disallow `/admin`, `/dashboard`, `/settings`, `/auth`, `/api`. Sitemap + host advertised.
+- `app/opengraph-image.tsx` — default site-wide 1200×630 OG. Inlines hex literals because Edge ImageResponse runs without our CSS cascade (lint-exempted alongside `lib/tokens.ts` + `app/global-error.tsx`).
+- `app/models/[slug]/opengraph-image.tsx` — per-model OG with provider mark, brutalist model name, stats strip (blended price / intelligence / speed / context). `generateImageMetadata` returns every seed slug so each model has a prerendered image at build time.
+- `app/mcps/[slug]/opengraph-image.tsx` — per-MCP OG with author eyebrow, brutalist name, tagline, surface-area stats (tools / resources / prompts / usage).
+- `app/api/health/route.ts` — Edge-runtime liveness probe. Returns `{ status, timestamp, uptimeSeconds, version, env }`. No-store cache. Phase 1 has no DB ping; adds `SELECT 1` once Supabase is wired.
+
+**Shared chassis for the batch types** — keeps each type-folder a thin config wrapper:
+- `lib/seed/generic.ts` — `GenericResource` shape (mirrors `resources` row), `GenericSort`, `sortGeneric`, `filterGeneric`, `GenericTypeConfig` (basePath / glyph / headline / singular / plural / showClientFilter).
+- `components/resources/GenericResourceIndex.tsx` — client list. Search + sort pills + optional client filter + Load-more pagination + skeleton + empty state + in-memory bookmarks. Same accent-rhythm pattern as /models + /mcps (mint at 0, UV at 4, dark elsewhere).
+- `components/resources/GenericResourceCard.tsx` — three-tone card variant.
+- `components/resources/DetailChassis.tsx` — Server Component detail page. Hero + 4-up stats strip + tabs + right rail (install actions, alternatives, source provenance). Accepts an optional `previewBlock: ReactNode` slotted as Zone 5.
+- `components/resources/DetailTabs.tsx` — Client tabs. Overview + optional preview + Compatibility. Hash-driven via the existing Tabs primitive.
+- `components/resources/ResourceIndexPage.tsx` — Server Component shell — kicker + brutalist headline + delegates to the client list.
+- `components/resources/CodeSnippetPreview.tsx` — static code-snippet view for /components, /prompts, /rules. Sandpack live playground deferred to Phase 2 per KNOWN_ISSUES.
+
+**Slice S03 — /components index + detail:**
+- `lib/seed/components.ts` — 4 seed components (shadcn pricing card, cmdk palette, magic glow button, data table) each with a real-ish code snippet.
+- `app/components/page.tsx` (10 lines) + `app/components/[slug]/page.tsx` (~30 lines). The detail page slots the snippet into the Zone-5 tab labelled "Snippet".
+
+**Batch S04-S08 — Skills, Rules, Subagents, Plugins, Prompts:**
+- One seed file per type (`lib/seed/{skills,rules,subagents,plugins,prompts}.ts`) — 4 entries each.
+- One `_configs.ts` central bundle file exposes `{SKILLS, RULES, SUBAGENTS, PLUGINS, PROMPTS}` with config + items.
+- Per-type pages (`app/{type}/page.tsx` + `app/{type}/[slug]/page.tsx`) are thin imports — ~10 lines for index, ~30 lines for detail. Detail pages opt-in to the snippet block based on whether seed entries ship a `codeSnippet`.
+- Custom preview tab labels per type: "Snippet" (components), "Rule text" (rules), "Template" (prompts). Skills / Subagents / Plugins use the Overview + Compatibility pair only.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green (added `app/**/opengraph-image.tsx` to the no-hex exception list).
+- build: green — **46 routes total** now (8 model SSGs + 8 MCP SSGs + 4×6=24 generic-type SSGs + statics + dynamic). Per-index size ~137 B (the chassis is shared). Per-detail size ~1.71 kB. Middleware 80.8 kB.
+- preview verification: all 6 new index routes return 200 on `/components`, `/skills`, `/rules`, `/subagents`, `/plugins`, `/prompts`. Detail routes return 200. `/sitemap.xml` returns valid XML with every route. `/robots.txt` returns the expected allow/disallow list. `/api/health` returns `{"status":"ok",...}`.
+
+### Decisions made this session
+
+- **D40 — One folder per type, one shared chassis.** Per-type folders stay (Phase B Flag 2 — locked). But every per-type page is a thin import of `ResourceIndexPage` + `DetailChassis` — together those drive 6 indexes (24 SSG detail pages) from < 250 lines of per-type page code. The seed files carry the data; the chassis carries the chrome.
+- **D41 — Per-type `previewBlock` is a render-prop, not a registry.** The detail chassis accepts `previewBlock?: ReactNode` rather than a `typeId`-keyed lookup. Lets /components and /prompts both reuse `CodeSnippetPreview` without coupling the chassis to the seed shape, and lets future types ship completely different Zone-5 blocks (e.g. MCP Tool Inspector lives in its own `McpDetailTabs` because its tab set differs).
+- **D42 — `_configs.ts` is a single import bundle, not a registry lookup.** Each page imports the specific bundle it needs (`COMPONENTS`, `SKILLS`, …) rather than going through a string-keyed dispatcher. Tree-shaking stays cheap; TypeScript stays narrow at each call site.
+- **D43 — OG per-type lives next to the page, uses `generateImageMetadata`.** Each `[slug]/opengraph-image.tsx` exports `generateImageMetadata` that returns every seed slug. Build prerenders a PNG per slug. Once data goes dynamic, swap the seed call for a DB query; the file structure doesn't change.
+- **D44 — `/api/health` runs on `runtime = 'edge'` so it's globally fast.** When the DB ping lands it'll need to switch to `nodejs` if Drizzle + `postgres-js` is the path, OR call the Supabase REST endpoint from Edge — preferred. Decision deferred to slice 18 (Supabase wiring).
+- **D45 — `tools` (IDEs), `deals`, `news`, `guides` routes are listed in `app/sitemap.ts` but don't have page files yet.** Sitemap entries are aspirational — when Google crawls, those return 404 today. That's intentional: the slugs will exist by launch; preloading them in sitemap means search-console history is continuous when they do. Mark as a Phase D acceptance check.
+
+### Cosmetic / open items
+
+- /components, /rules, /prompts detail pages render the code snippet with no syntax highlighting. Adding `shiki` or `prism` is a Phase 2 polish; today's monochrome read is fine for the snippet block (we're previewing payloads, not selling syntax highlighting).
+- Snippet pre-blocks don't wrap on mobile — they overflow horizontally. Acceptable for now (Promptkit prototype shows the same behavior); add `overflow-x: auto` styling sweep when the design pass for mobile lands.
+
+### Deferred to Session 9
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- Real Sandpack playground for /components — Phase 2 per KNOWN_ISSUES.
+- Slice S09+ — /tools, /deals (Pro paywall blur pattern), /news, /guides.
+- Bookmarks persistence (still in-memory across S01-S08).
+- Cmd-K should index the new resource types — currently shows Models only. Wire `_configs.ts` into the Cmd-K results list.
+- Real OAuth round-trip once a Supabase project lands.
+
+### Next session
+
+1. Slice S09 — /tools index + detail.
+2. /deals index with Pro paywall pattern.
+3. Cmd-K expansion (index all 8 resource types).
+
+Gates green at end of Session 8. No mid-step deferrals.
+
+---
+
 ## Session 7 — Foundation slice F overlays + Slice S02 (/mcps index + detail)
 
 **Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._

@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 7
+## Current state — end of Session 8
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 7 of ~30.
+**Session number:** 8 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -45,17 +45,24 @@
   - `app/mcps/page.tsx`, `app/mcps/_components/{McpsList,McpCard}.tsx`, `app/mcps/loading.tsx`, `app/mcps/[slug]/page.tsx`, `app/mcps/[slug]/_components/McpDetailTabs.tsx`. Index has client + sort filters; detail has 5 tabs including a read-only MCP Tool Inspector that accordion-expands each tool to show its JSON Schema input.
   - `generateStaticParams` prerenders all 8 MCP detail pages.
   - Editor's-pick accent: /models uses mint at 0 + UV at 4; /mcps uses UV at 0 + mint at 4 (D37) for visual distinction.
+- ✓ Session 8 — SEO infra + shared chassis + 6-type batch (S03-S08).
+  - SEO: `app/sitemap.ts` (dynamic; pulls from seed data), `app/robots.ts` (allow `/`, disallow authed paths + /api), `app/opengraph-image.tsx` (default 1200×630), `app/models/[slug]/opengraph-image.tsx` + `app/mcps/[slug]/opengraph-image.tsx` (per-resource OG via generateImageMetadata), `app/api/health/route.ts` (Edge liveness probe returning `{status, timestamp, uptimeSeconds, version, env}`).
+  - Shared chassis: `lib/seed/generic.ts` (shape + sort + filter), `components/resources/{GenericResourceIndex,GenericResourceCard,DetailChassis,DetailTabs,ResourceIndexPage,CodeSnippetPreview}.tsx`. Detail chassis takes an optional `previewBlock` for Zone 5.
+  - Batch S03-S08: /components (Snippet tab), /skills (Overview + Compatibility), /rules (Rule text tab), /subagents (Overview + Compatibility), /plugins (Overview + Compatibility), /prompts (Template tab). Each per-type page is ~10 lines index + ~30 lines detail; 4 seed entries per type. `lib/seed/_configs.ts` bundles configs.
+  - Build emits 46 routes total. 24 new SSG detail pages added (4 per type × 6 types). Middleware 80.8 kB.
 - ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
   - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
   - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`) on branch `main`, plus a follow-up adding error / not-found boundaries. Session 7's work is uncommitted on local fs at handoff.
+**Last commit:** `9fcd3c3` (`feat(overlays,mcps): foundation overlays + slice S02`) on branch `main`. Session 8's work is uncommitted on local fs at handoff.
 
-**4 quality gates at end of Session 7:** typecheck ✓, lint ✓, build ✓ — 22 routes (8 model details + 8 MCP details prerendered via generateStaticParams; statics + dynamic routes). `/mcps` 5.84 kB / 121 kB first-load, `/mcps/[slug]` 4.2 kB / 120 kB. Middleware unchanged at 80.5 kB. Preview verified: ⌘K opens globally, palette filtering works, Stack Picker renders 6 presets + AI clients + tech-stack tags, /mcps detail tool inspector accordion expands tools with JSON Schema.
+**Earlier checkpoint commits on `main`:** `50a1d7d` (`fix(app): add error / global-error / not-found route boundaries`), `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`), `52e51ae` (Session 5 models), `40a64fd` (Session 4 chrome), `6aa2511` (planning docs in repo), `9202881` (Session 3 auth + providers), `df7289a` (Sessions 1-2 skeleton).
 
-**Next planned:** Session 8 — SEO infra (`app/sitemap.ts` + `app/robots.ts` + `app/opengraph-image.tsx` + `/api/health`) and Slice S03 `/components` index + detail (third resource type, non-model-non-MCP — exercises the chassis on a new shape).
+**4 quality gates at end of Session 8:** typecheck ✓, lint ✓, build ✓ — 46 routes total (8 type indexes + 40 prerendered SSG detail pages + sitemap + robots + 18 OG image variants + `/api/health` + statics). Shared chassis keeps per-index size at ~137 B and per-detail at ~1.71 kB. Middleware 80.8 kB. Curl-verified: `/components`, `/skills`, `/rules`, `/subagents`, `/plugins`, `/prompts`, `/sitemap.xml`, `/robots.txt`, `/api/health` all return 200 with valid bodies.
+
+**Next planned:** Session 9 — Slice S09 `/tools` index + detail, `/deals` index with the Pro paywall blur pattern, and Cmd-K expansion to index all 8 resource types from `lib/seed/_configs.ts`.
 
 ---
 
