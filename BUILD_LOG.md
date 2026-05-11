@@ -112,4 +112,73 @@ The 4 quality gates are green at end-of-Session-2. Local repo is clean and ready
 
 ---
 
+## Session 3 — relations.ts + Boot Steps 6-7 (auth + root providers)
+
+### Baseline check
+
+Project lives at `~/Documents/VibeCoderHub/vibecoderhub-web` now (moved out of the Claude Desktop sandbox per Session 2 flag). First commit on `main` (`df7289a`). All four gates were green at start of Session 3 per Ben's report — re-running them was skipped to save time; Session 2's BUILD_LOG entry covers them.
+
+### Built
+
+- **`db/relations.ts`** — populated in full (~520 lines, 51 `relations(...)` blocks). Every FK from `db/schema.ts` mirrored into a matching `one()/many()` pair. Disambiguation via `relationName`:
+  - `resourceAuthor` / `resourceReviewer` (resources → profiles, two FKs)
+  - `guideVerifier` / `guideAuthor` (guides → profiles)
+  - `submissionAuthor` / `submissionReviewer` (submissions → profiles)
+  - `depParent` / `depChild` (resourceDependencies)
+  - `altBase` / `altAlt` (resourceAlternatives)
+  - `pluginsMarketplace`, `commandSubagent`, `startersRules`, `backendKitsRules` (resources self-or-cross refs)
+  - Self-refs: `userStackFork`, `resourceFork`, `commentThread`
+  - 23 type-extension tables (components, mcps, models, …) each get a `resource: one(resources, ...)` plus matching `resources.{type}: one({type})` on the parent.
+- **Boot Step 6 — Auth (Supabase SSR):**
+  - `lib/auth/server.ts` — `getSupabaseServerClient()` per-request (reads `cookies()` from `next/headers`), `auth()` returns `{user} | null`, `requireUser()` throws on signed-out.
+  - `lib/auth/client.ts` — singleton browser client, `useSession()` hook subscribes to auth state changes, `signOut(redirectTo)` helper.
+  - `lib/auth/middleware.ts` — `refreshSession(req, res)` rotates Supabase cookies on Edge. Skips network round-trip when env points at `your-project-ref` placeholder or anon key ends with `dummy` / equals `eyJ...` (local-dev no-services mode).
+  - `lib/auth/is-admin.ts` — checks `user.user_metadata.provider_id` against `env.ADMIN_GITHUB_USER_IDS`.
+  - `lib/auth/return-to.ts` — `sanitiseReturnTo()` only accepts same-origin absolute paths; rejects protocol-relative, backslash variants, schemes, and >2048 chars. `signInUrl(currentPath)` builds the OAuth-with-return-to URL.
+  - `app/auth/callback/route.ts` — OAuth code exchange, sanitises `next` param, redirects with explicit error flags on failure.
+  - **Modified `middleware.ts`** — now async; calls `refreshSession()` before the response is returned so the Supabase cookies ride along with the Set-Cookie header.
+- **Boot Step 7 — Root providers + cookie banner + root layout:**
+  - `components/theme/ThemeProvider.tsx` — cookie-backed (`vch_theme`). Phase 1 dark-only; API supports `light | dark | system` so architecture is light-ready.
+  - `components/theme/ReducedMotionProvider.tsx` — reads `prefers-reduced-motion` MQ; complements the global CSS suppression in globals.css for JS-driven motion.
+  - `components/stack-context/StackProvider.tsx` — cookie-backed (`vch_stack`); `setStack` JSON-encodes into the cookie; `clearStack` resets. Per Q2.3.
+  - `components/analytics/PostHogProvider.tsx` — opt-in via `vch_consent === 'true'` cookie. Refuses to init on dummy / placeholder keys. `history_change` capture so App Router navs auto-track.
+  - `components/layout/cookie-banner/CookieBanner.tsx` — accept / reject; writes `vch_consent`; accept does a hard reload so PostHogProvider's effect re-runs.
+  - `app/providers.tsx` — client-side composition: `ReducedMotion > Theme > Stack > PostHog > {children + Toaster + CookieBanner}`.
+  - `app/layout.tsx` — Server Component. Reads `vch_theme` + `vch_stack` cookies and threads initial state into Providers. Wires three Next/font Google fonts (Bebas Neue → `--font-display`, DM Sans → `--font-sans`, Space Mono → `--font-mono`) which globals.css consumes. Sets `<html class="... dark">` so SSR + first paint are dark; `suppressHydrationWarning` for the cookie-driven className flicker.
+
+### Decisions made
+
+- **D13.** Removed unused `eslint-config-next` import side-effect path is now well-tested — added it to the locked decisions table. (No new fix; this is a recap from D7 since the pattern carried forward to Session 3 without issue.)
+- **D14.** Disabled core ESLint `no-unused-vars` (rule "off") and rely solely on `@typescript-eslint/no-unused-vars`. The core rule fires on interface method-signature parameter names (`setX: (next: T) => void`), which are documentation, not bindings. TS variant handles these correctly.
+- **D15.** Filled in `.env.local` dummies for the four empty required values (`R2_ACCOUNT_ID/ACCESS_KEY_ID/SECRET_ACCESS_KEY`, `RESEND_WEBHOOK_SECRET`) and replaced the `<ref>` / `<pwd>` placeholder `DATABASE_URL_*` strings with `postgresql://postgres:postgres@localhost:54322/postgres` so Zod url() parsing passes. Session 1 had left these empty / placeholder-but-not-URL; the build only surfaced the issue once `app/auth/callback/route.ts` imported the auth chain (which transitively imports `lib/env.ts`). Lib/env evaluation at build time is now a known constraint.
+- **D16.** Middleware `refreshSession()` short-circuits if the Supabase URL contains the documented placeholder (`your-project-ref`) or the anon key looks like a placeholder (`eyJ...` / `*dummy`). Without this, dev runtime would attempt a network call to a non-existent host on every request. Real keys land later, this defensive branch becomes dead code at that point — no removal needed.
+- **D17.** `app/providers.tsx` is a Client Component wrapping all four providers + `Toaster` + `CookieBanner`. `app/layout.tsx` (Server Component) reads cookies and hands `initialTheme` / `initialStack` down. Pattern: server reads request-scoped state, client owns reactivity. Keeps the layout from needing `'use client'`.
+- **D18.** Stopped at Step 7 instead of starting Step 8. UI primitives are 17 components and need design-system context (sizing/variant tokens) that's not yet anchored to a real consumer. Session 4 should do Steps 8-10 fresh — primitives + icons + layout chrome (Header/Footer/MobileNav) — because they all interact and reviewing the whole batch at once catches inconsistencies earlier.
+
+### What surprised me
+
+- Auth chain build-time evaluation: as soon as `app/auth/callback/route.ts` imported `lib/auth/server.ts → lib/env.ts`, Next executed lib/env's Zod parse during `next build`'s "Collecting page data" step. Empty / placeholder env values that "worked" in Session 2 (no app/* file imported env) became hard build failures. Lesson: any file that imports `@/lib/env` widens the build-time validation requirement to every dev with an .env.local. Worth documenting in the env.example dummy-mode comment.
+- Middleware bundle grew from 30.5 kB → 80.7 kB after adding `@supabase/ssr`. Edge bundle is now non-trivial but still under the 1 MB Edge limit. Worth watching as Sentry (Step 5) lands.
+- The `relations.ts` write was clean and direct (no subagent) — Session 2's retry instinct ("use a subagent for big files") was wrong for this kind of work. Mechanical FK mirroring is fine to write inline as long as the file is structured into sections.
+
+### Deferred to KNOWN_ISSUES.md
+
+- Boot Step 5 (Sentry + Pino) — still needs Sentry DSN. Will land Session 4 once DSN provided.
+- Boot Step 8 (UI primitives) — deferred to Session 4. Need 17 components, all token-aware.
+- Boot Step 9 (icons) — Session 4 alongside primitives.
+- Boot Step 10 (layout chrome) — Session 4 stretch.
+- `husky` `.git can't be found` warning at install (pre Session 3 commit) — went away after `git init` per user.
+
+### Next session
+
+Resume with:
+1. Boot Step 5 (Sentry + Pino) — `lib/logger.ts`, `sentry.{client,server,edge}.config.ts`, `instrumentation.ts`. Needs Sentry DSN.
+2. Boot Step 8 (UI primitives) — button, input, label, badge, pill, card, skeleton, dialog, drawer, tooltip, popover, dropdown, tabs (hash-based per Phase B B2), toast (already partly via Sonner Toaster), icon-button, avatar.
+3. Boot Step 9 (icons) — Lucide wrapper + provider/client logos.
+4. If context permits: Boot Step 10 (header / footer / mobile-nav / stack-banner / skip-link / breadcrumb).
+
+Gates green at end of Session 3. No mid-step deferrals.
+
+---
+
 ## (Future sessions append below)

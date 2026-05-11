@@ -58,4 +58,13 @@
 - **Schema mirror — generated `tsvector` columns** — `resources.search_vector` and any other `generated always as ... stored` columns are declared as plain `tsvector('search_vector')` in Drizzle. The generation expression lives DB-side only. Drizzle reads/writes will SEE the value correctly because Postgres computes it; we just can't `.insert(...)` into the column from app code, and `drizzle-kit generate` would lose the generation clause if it ever rebuilds from schema.ts. Always treat `0001_initial.sql` as authoritative; never `db:generate` a fresh migration from schema.ts without verifying.
 - **Project working dir is a Claude Desktop sandbox** — `~/Library/Application Support/Claude/local-agent-mode-sessions/<uuid>/.../outputs/vibecoderhub-web`. Fragile; Claude Desktop may clean these directories on its own schedule. Move to a normal project location before serious work (e.g. `~/Documents/Scripts & Tasks/VibeCoderHub`).
 
+### From Phase C Session 3
+
+- **Boot Step 5 (Sentry + Pino)** — pending Sentry DSN. Land first thing Session 4 when DSN provided. Until then the app has no client-side error reporting beyond the browser console.
+- **Boot Step 8-10 (UI primitives, icons, layout chrome)** — deferred to Session 4. Three Boot Steps that interact closely; better to land as one cohesive batch than to thin-slice across sessions.
+- **No `app/page.tsx` yet** — root layout renders, but there's no landing page. `pnpm dev` would 404 on `/`. That's fine for Phase C foundation; the page lands in Foundation slice F (Session 5).
+- **`refreshSession` defensive skip is config-coupled** — middleware short-circuits when the Supabase URL contains `your-project-ref` or the anon key looks like a placeholder (`eyJ...` / `*dummy`). If Ben sets a real URL but leaves the anon key as `eyJ...`, the skip will still fire even though the URL is real. Won't matter in practice because anon key changes too — but worth knowing.
+- **Auth callback OAuth flow is wired but untested end-to-end** — no Supabase project exists yet to authenticate against. End-to-end test (real GitHub OAuth round-trip) happens Session 5 / 6 when Supabase is provisioned.
+- **`vch_consent` cookie controls PostHog init** — opt-in, not opt-out. Local dev never initialises PostHog (key is dummy). No analytics until both: real `phc_*` key AND user consent.
+
 ## (Append new deferrals as they happen)

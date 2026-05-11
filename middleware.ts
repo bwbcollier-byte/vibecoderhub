@@ -2,32 +2,34 @@
 //
 // Runs before every matched request. Kept lean because Edge can't talk to
 // postgres-js and can't open arbitrary Node modules. Heavier work (rate-limit
-// DB writes, full auth lookups, admin allowlist checks) lives in:
+// DB writes, full admin enforcement, profile loads) lives in:
 //   - lib/server/ratelimit.ts   — called from route handlers + action middleware
-//   - lib/auth/middleware.ts    — wired in Boot Step 6 (next session)
-//   - lib/auth/is-admin.ts      — Boot Step 6
+//   - lib/auth/server.ts        — RSC/Action `auth()` helper
+//   - lib/auth/is-admin.ts      — checked inside `/admin` route group layout
 //
 // What we DO here:
-//   1. Generate a per-request ID and forward it on `x-request-id` so logs,
+//   1. Refresh the Supabase auth session (rotates the access token cookie
+//      via @supabase/ssr — Edge-safe).
+//   2. Generate a per-request ID and forward it on `x-request-id` so logs,
 //      Sentry, and the client can correlate. The Node-side runtime reads it
 //      via next/headers and re-enters AsyncLocalStorage (lib/http/request-id.ts).
-//   2. Capture the client IP into a header that Node-side code can trust
+//   3. Capture the client IP into a header that Node-side code can trust
 //      (the raw x-forwarded-for is a potential spoof on non-Vercel hosts).
-//   3. Stamp matched admin paths with a header so the route group layout knows
-//      to enforce the admin allowlist (the actual check lives in Boot Step 6).
+//   4. Stamp matched admin paths with a header so the admin route group can
+//      gate at the layout level (the actual allowlist check uses is-admin.ts).
 //
-// We do NOT touch the DB, postgres, or Supabase here. Step 6 will add Supabase
-// SSR cookie refresh via @supabase/ssr (Edge-safe).
+// We do NOT touch the DB or postgres here.
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { REQUEST_ID_HEADER } from '@/lib/http/request-id';
 import { getClientIp } from '@/lib/http/ip';
+import { refreshSession } from '@/lib/auth/middleware';
 
 const ADMIN_PATH_PREFIX = '/admin';
 const ADMIN_PATH_FLAG = 'x-vch-admin-path';
 const CLIENT_IP_HEADER = 'x-vch-client-ip';
 
-export function middleware(req: NextRequest): NextResponse {
+export async function middleware(req: NextRequest): Promise<NextResponse> {
   const requestId = crypto.randomUUID();
   const clientIp = getClientIp(req.headers);
 
@@ -40,10 +42,16 @@ export function middleware(req: NextRequest): NextResponse {
     forwardHeaders.set(ADMIN_PATH_FLAG, '1');
   }
 
-  const res = NextResponse.next({
+  let res = NextResponse.next({
     request: { headers: forwardHeaders },
   });
-  // Echo on the response so the browser can show / report it.
+
+  // Rotate the Supabase auth cookies if the access token is near expiry.
+  // This must happen on the same response we return so Set-Cookie reaches
+  // the browser.
+  res = await refreshSession(req, res);
+
+  // Echo the request id on the response so the browser / clients can correlate.
   res.headers.set(REQUEST_ID_HEADER, requestId);
   return res;
 }

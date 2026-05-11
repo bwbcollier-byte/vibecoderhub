@@ -52,6 +52,10 @@ export default [
     rules: {
       // ── TypeScript discipline ─────────────────────────────────────────
       '@typescript-eslint/no-explicit-any': 'error',
+      // Defer to the TS variant — the core rule trips on interface signature
+      // parameter names ("setX: (next: T) => void"), which are documentation,
+      // not bindings.
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
