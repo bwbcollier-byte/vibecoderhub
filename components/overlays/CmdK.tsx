@@ -291,7 +291,7 @@ export function CmdK({ onClose, onOpenStackPicker }: CmdKProps): React.ReactElem
       aria-modal="true"
       aria-label="Search and commands"
       onClick={onClose}
-      className="fixed inset-0 z-popover bg-black/70 flex items-start justify-center pt-[12vh] px-4"
+      className="fixed inset-0 z-[100] bg-black/70 flex items-start justify-center pt-[12vh] px-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}

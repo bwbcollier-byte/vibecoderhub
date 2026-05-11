@@ -56,7 +56,7 @@ export function CookieBanner(): ReactNode {
     <div
       role="dialog"
       aria-label="Cookie consent"
-      className="fixed bottom-4 left-4 right-4 z-50 max-w-md rounded border border-border bg-surface p-4 text-sm shadow-md sm:right-auto"
+      className="fixed bottom-4 left-4 right-4 z-[80] max-w-md rounded border border-border bg-surface p-4 text-sm shadow-md sm:right-auto"
     >
       <p className="mb-3">
         We use cookies for analytics (PostHog) to learn how the site is used. No ads,

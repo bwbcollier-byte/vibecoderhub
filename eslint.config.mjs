@@ -129,6 +129,10 @@ export default [
       // as a deliberate last resort.
       'app/opengraph-image.tsx',
       'app/**/opengraph-image.tsx',
+      // Email templates render in third-party clients with no access to our
+      // CSS cascade. They inline the canonical hex values as a deliberate
+      // last resort, matching the OG-image exception.
+      'lib/resend/templates/**/*.tsx',
     ],
     rules: {
       'no-restricted-syntax': 'off',

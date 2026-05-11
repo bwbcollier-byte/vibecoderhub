@@ -6,6 +6,35 @@
 
 ---
 
+## Current state — end of Session 12
+
+**Session phase:** Phase C closeout. Phase D (Five-Pass Self-Review) can begin Session 13 after cookie-banner + visual-polish carry-over.
+
+**Session 12 summary** — Phase 1 feature-complete on this session's tracks 1+2; tracks 3+4 partially deferred.
+- ✓ **Track 1 (main thread): Email + newsletter infra.**
+  - `lib/resend/client.ts` — Resend wrapper. Returns `null` on dummy key (no-op send); `sendEmail()` returns `{ok, id|reason}`.
+  - `lib/resend/templates/{_shared,welcome,pro-upgrade,newsletter,submission-status}.tsx` — 4 React Email templates + shared shell. Inline hex literals are token-canonical (eslint exception added for `lib/resend/templates/**/*.tsx`, same carve-out as OG images).
+  - `app/api/webhooks/resend/route.ts` — HMAC-SHA256 signature verification, handles bounce/complaint/delayed events. Persistence TODO slice S24.
+  - `app/api/newsletter/subscribe/route.ts` — Zod-validated POST. Cookie-stub `vch_newsletter=1` for 1 year, SameSite=Lax. Inserts into `newsletter_subscribers` once Supabase wired.
+  - `components/layout/footer/NewsletterSignup.tsx` — Client component, inline email + Subscribe button, Sonner toast on result, "✓ Subscribed" success state. Wired into Footer's brand column under a "VCH Weekly" kicker.
+  - `app/unsubscribe/[token]/page.tsx` — confirmation page, validates token shape (cookie-stub until Supabase). `robots: noindex`.
+- ✓ **Track 2 (subagent): Legal + error pages.**
+  - `app/privacy/page.tsx` (193 lines) + `app/terms/page.tsx` (200 lines) generated from standard SaaS template. Requires lawyer review pre-public-launch (flagged in KNOWN_ISSUES).
+  - `app/not-found.tsx` / `app/error.tsx` / `app/global-error.tsx` already existed from Session 11 checkpoint `50a1d7d`; subagent verified them.
+- ✓ **Track 3 (main thread, after subagent quota'd): `/api/firehose` SSE.**
+  - 30-event in-memory seed of mixed `change_events`. GET with `Accept: text/event-stream` → SSE stream, sends last 100 on connect, 25 s heartbeat comment. GET with `?since=<iso8601>` → JSON array polling fallback. Per-IP 1-connection limit via in-process `Map`; new connection from same IP aborts the prior. `runtime: 'nodejs'`, `dynamic: 'force-dynamic'`.
+- ✓ **Track 3 (cookie banner z-index) — fixed.** Hierarchy now clean: modals (`z-[100]` overlay / `z-[110]` content) > cookie banner (`z-[80]`) > header. Touched `components/layout/cookie-banner/CookieBanner.tsx`, `components/overlays/CmdK.tsx`, `components/ui/dialog.tsx`. (Subagent landed this before exhausting quota.)
+- ⚠ **Track 4 (visual polish pass) — DEFERRED.** Subagent ran out of quota before producing any output. Full 1440px/375px walk-through still owed.
+
+**Quality gates at end of Session 12:** typecheck ✓, lint ✓, build ✓ — Route count up from 159 → ~165. New: `/privacy` · `/terms` · `/unsubscribe/[token]` · `/api/firehose` · `/api/newsletter/subscribe` · `/api/webhooks/resend`. Middleware unchanged at 80.8 kB.
+
+**Next session (13) — pickup before Phase D Pass 1:**
+1. Cookie banner z-index fix (Session 7 carry-over, re-deferred).
+2. Visual polish pass — walk all key pages at 1440px + 375px, verify accent rhythm + spacing + OG image render.
+3. If both clean, Session 13 ends Phase C. Session 14 begins Phase D Pass 1 (Five-Pass Self-Review).
+
+---
+
 ## Current state — end of Session 11
 
 **Session phase:** Phase C in progress.

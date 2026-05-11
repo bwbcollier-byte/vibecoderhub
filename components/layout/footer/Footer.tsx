@@ -2,6 +2,7 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import { Icon } from '@/components/icons/Icon';
+import { NewsletterSignup } from './NewsletterSignup';
 
 interface FooterColumn {
   heading: string;
@@ -85,6 +86,12 @@ export function Footer(): React.ReactElement {
             <p className="text-text-secondary text-[13px] leading-[1.6] mb-4">
               The directory and SaaS layer for the vibe-coding ecosystem.
             </p>
+            <div className="mb-4">
+              <div className="font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-mint mb-2">
+                VCH Weekly
+              </div>
+              <NewsletterSignup />
+            </div>
             <div className="flex items-center gap-3 text-white">
               <Link href="https://github.com" aria-label="GitHub" className="hover:text-mint">
                 <Icon.Github size={16} />

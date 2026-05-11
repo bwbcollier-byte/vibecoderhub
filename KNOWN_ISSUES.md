@@ -67,4 +67,12 @@
 - **Auth callback OAuth flow is wired but untested end-to-end** — no Supabase project exists yet to authenticate against. End-to-end test (real GitHub OAuth round-trip) happens Session 5 / 6 when Supabase is provisioned.
 - **`vch_consent` cookie controls PostHog init** — opt-in, not opt-out. Local dev never initialises PostHog (key is dummy). No analytics until both: real `phc_*` key AND user consent.
 
+### From Phase C Session 12
+
+- **Privacy + Terms generated from standard SaaS template** — `app/privacy/page.tsx` + `app/terms/page.tsx` are template-driven (data collection, third-parties enumerated, Pro subscription terms, DMCA, Delaware governing-law boilerplate). Requires lawyer review before public launch (already flagged in ASSUMPTIONS / Phase A).
+- **Email infrastructure stubbed** — `lib/resend/client.ts` returns `null` on dummy key. Templates (`welcome`, `pro-upgrade`, `newsletter`, `submission-status`) compile + are render-ready but no email is actually sent until `RESEND_API_KEY` is real. `/api/webhooks/resend` verifies sigs and logs but does not yet persist to `newsletter_subscribers` (TODO slice S24). Newsletter signup POST `/api/newsletter/subscribe` is cookie-stubbed (`vch_newsletter=1`) until Supabase wired.
+- **Unsubscribe is cookie-stub** — `/unsubscribe/[token]` validates token format and shows the success state but does not yet flip `newsletter_subscribers.unsubscribed_at`. Wires up when Supabase lands.
+- **`/api/firehose` uses seed data** — 30-event in-memory seed array, no DB. Per-IP single-connection limit via in-process `Map` (won't survive multiple Node processes / serverless cold starts). Polling fallback at `?since={iso8601}` works. Swap to real `change_events` query when ingestion is producing rows.
+- **Track 4 (visual polish pass) — DEFERRED** — Subagent hit usage limit before producing output. Full 1440px/375px walk-through still pending. Pick up in Session 13 before Phase D Pass 1 begins. (Track 3 cookie-banner z-index landed before the agent quota'd: cookie banner now `z-[80]`, modals `z-[100]/[110]`.)
+
 ## (Append new deferrals as they happen)
