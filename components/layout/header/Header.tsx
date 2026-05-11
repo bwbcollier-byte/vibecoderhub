@@ -34,16 +34,16 @@ export function Header(): React.ReactElement {
 
   return (
     <header className="sticky top-0 z-sticky bg-canvas border-b border-surface">
-      <div className="flex items-center gap-4 px-4 md:px-8 h-[60px] max-w-xxl mx-auto">
+      <div className="flex items-center gap-3 px-4 md:px-6 h-[60px] max-w-xxl mx-auto">
         {/* Wordmark */}
-        <Link href="/" className="flex items-center gap-2 hide-mobile">
+        <Link href="/" className="flex items-center gap-2 hide-mobile shrink-0">
           <span
             className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-mint text-black font-display text-[18px]"
             aria-hidden
           >
             V
           </span>
-          <span className="font-display text-[22px] tracking-[0.5px] text-white">
+          <span className="font-display text-[20px] tracking-[0.5px] text-white whitespace-nowrap">
             VIBE CODER HUB
           </span>
         </Link>
@@ -60,7 +60,7 @@ export function Header(): React.ReactElement {
         </button>
 
         {/* Top nav */}
-        <nav className="hide-mobile flex items-center gap-1 ml-4">
+        <nav className="hide-mobile flex items-center gap-0.5 ml-2 shrink-0">
           {TOP_NAV.map((item) => {
             const active = isActive(item.href);
             return (
@@ -68,8 +68,8 @@ export function Header(): React.ReactElement {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'font-mono uppercase tracking-[1.5px] text-[11px] font-bold',
-                  'px-3 py-2 -mb-px border-b-2 transition-colors duration-base ease-out',
+                  'font-mono uppercase tracking-[1.4px] text-[11px] font-bold whitespace-nowrap',
+                  'px-2.5 py-2 -mb-px border-b-2 transition-colors duration-base ease-out',
                   active
                     ? 'border-mint text-white'
                     : 'border-transparent text-[#cfcfcf] hover:text-link-hover',
@@ -89,10 +89,10 @@ export function Header(): React.ReactElement {
           type="button"
           onClick={openCmdK}
           className={cn(
-            'hide-mobile inline-flex items-center gap-2',
+            'hide-mobile inline-flex items-center gap-2 shrink-0',
             'bg-[#0a0a0a] border border-surface rounded-feature',
             'px-3 py-[7px] text-text-secondary hover:text-white',
-            'min-w-[200px] cursor-pointer transition-colors duration-base ease-out',
+            'min-w-[160px] cursor-pointer transition-colors duration-base ease-out',
           )}
           aria-label="Open search"
         >
@@ -108,7 +108,7 @@ export function Header(): React.ReactElement {
           type="button"
           onClick={openStackPicker}
           className={cn(
-            'hide-mobile inline-flex items-center gap-2',
+            'hide-mobile inline-flex items-center gap-2 shrink-0',
             'h-btn-sm px-3 rounded-pill border cursor-pointer',
             'font-mono uppercase tracking-[1.2px] text-[10px] font-bold',
             'transition-colors duration-base ease-out',
@@ -119,7 +119,7 @@ export function Header(): React.ReactElement {
           aria-label="Update my stack"
         >
           <Icon.Layers size={11} />
-          <span className="truncate max-w-[160px]">
+          <span className="truncate max-w-[120px] whitespace-nowrap">
             {stack?.label ?? 'Set your stack'}
           </span>
           <Icon.ChevDown size={11} />
@@ -128,7 +128,7 @@ export function Header(): React.ReactElement {
         <BookmarkChip />
 
         {/* Auth buttons */}
-        <div className="hide-mobile flex items-center gap-2">
+        <div className="hide-mobile flex items-center gap-2 shrink-0">
           <Button variant="ghost" size="sm" onClick={() => openAuth('signin')}>
             Sign in
           </Button>

@@ -73,6 +73,23 @@
 - **Email infrastructure stubbed** — `lib/resend/client.ts` returns `null` on dummy key. Templates (`welcome`, `pro-upgrade`, `newsletter`, `submission-status`) compile + are render-ready but no email is actually sent until `RESEND_API_KEY` is real. `/api/webhooks/resend` verifies sigs and logs but does not yet persist to `newsletter_subscribers` (TODO slice S24). Newsletter signup POST `/api/newsletter/subscribe` is cookie-stubbed (`vch_newsletter=1`) until Supabase wired.
 - **Unsubscribe is cookie-stub** — `/unsubscribe/[token]` validates token format and shows the success state but does not yet flip `newsletter_subscribers.unsubscribed_at`. Wires up when Supabase lands.
 - **`/api/firehose` uses seed data** — 30-event in-memory seed array, no DB. Per-IP single-connection limit via in-process `Map` (won't survive multiple Node processes / serverless cold starts). Polling fallback at `?since={iso8601}` works. Swap to real `change_events` query when ingestion is producing rows.
-- **Track 4 (visual polish pass) — DEFERRED** — Subagent hit usage limit before producing output. Full 1440px/375px walk-through still pending. Pick up in Session 13 before Phase D Pass 1 begins. (Track 3 cookie-banner z-index landed before the agent quota'd: cookie banner now `z-[80]`, modals `z-[100]/[110]`.)
+- **Track 4 (visual polish pass) — landed Session 13.** Header overflow at 1440px fixed (wordmark wrapping + Get-started button clipping). Tightened header: `gap-3`, `md:px-6`, wordmark `text-[20px]` + `whitespace-nowrap`, nav `gap-0.5` + `px-2.5`, search `min-w-[160px]`, stack chip `max-w-[120px]`, all elements `shrink-0`. `BookmarkChip` now hidden below `2xl` (1536px) — still accessible via `/dashboard/bookmarks`. Mobile pass clean across home/models/pricing/deals/compare/privacy.
+
+### From Phase C Session 13 — Phase 2 carry-over (definitive deferred list)
+
+These are intentional Phase 2+ deferrals — do NOT pick them up before public launch unless a real customer-blocking issue surfaces:
+
+- Light mode (Phase A R3)
+- Live Sandpack playgrounds (Q1.1)
+- Live MCP tool invocation (Q1.1) — read-only inspector ships Phase 1
+- Open-weights hardware sizing engine (Q1.1) — data captured, no recommendations
+- Hosted gateway runtime (Q1.5) — schema present, `/dashboard/gateway` is "coming soon"
+- Public read-only JSON API (Q3.6) — RSS feeds ship Phase 1
+- GDPR data export automation (Q3.1) — manual within 30 days for now
+- Cmd-K type-prefix filter `>type query` (Q2.5) — basic search works; prefix filter Phase 2
+- Editorial seed bundle pickup — pending Ben's delivery; consumed in slices 12/14/17/24 when delivered
+- Real credentials provisioning — Supabase prod, Stripe live, Resend domain, Sentry DSN, PostHog key, OpenAI key, R2, Slack ops webhook (see SESSION_HANDOFF §Credentials package)
+- Boot Step 5 (Sentry + Pino) — pending Sentry DSN
+- Node 22 local pin — Vercel + GHA pinned; local is the gap
 
 ## (Append new deferrals as they happen)

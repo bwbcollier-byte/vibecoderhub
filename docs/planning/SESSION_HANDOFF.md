@@ -6,6 +6,44 @@
 
 ---
 
+## Current state — end of Session 13 — **READY FOR PHASE D**
+
+**Session phase:** Phase C closeout complete. Phase D (Six-Pass Self-Review) begins Session 14.
+
+**Session 13 summary** — Visual polish pass + pre-Phase-D readiness check. No new features.
+
+- ✓ **20-route curl spot-check** — all returned 200 (including new Session-12 routes `/privacy`, `/terms`, `/unsubscribe/[token]`, `/api/firehose`).
+- ✓ **1440px walk** — `/`, `/models`, `/models/claude-opus-4-7`, `/mcps`, `/pricing`, `/compare?ids=…`, `/deals`, `/best-for/saas-weekend`, `/privacy` visually verified. Mint pick at 0, UV pick at 4 (or vice versa per type) rhythm intact. Tabs, right-rail, filter pills, ranked numbered lists all aligned.
+- ✓ **375px walk** — `/`, `/models`, `/pricing`, `/deals`, `/compare`, `/privacy` checked. No horizontal-overflow regressions. Compare table scrolls horizontally inside its container (`minWidth: 720` on the table, `overflow-x-auto` on wrapper) — working as designed.
+- ✓ **Visual fix landed: header overflow at 1440px.** Before: wordmark wrapped to 99px, "Get started" clipped past viewport at right:1470. After: header content fits within 1440 (last button right:1408). Changes in `components/layout/header/Header.tsx` + `components/layout/header/BookmarkChip.tsx`:
+  - Container `gap-4 px-4 md:px-8` → `gap-3 px-4 md:px-6`
+  - Wordmark `text-[22px]` → `text-[20px]` + `whitespace-nowrap` + `shrink-0`
+  - Nav `gap-1 ml-4 px-3` → `gap-0.5 ml-2 px-2.5` + `whitespace-nowrap`
+  - Search trigger `min-w-[200px]` → `min-w-[160px]` + `shrink-0`
+  - Stack chip `max-w-[160px]` → `max-w-[120px]` + `shrink-0`
+  - BookmarkChip: `hide-mobile inline-flex` → `hide-mobile hidden 2xl:inline-flex shrink-0`. Below 1536px the chip is hidden — bookmarks still reachable via `/dashboard/bookmarks` directly.
+- ✓ **KNOWN_ISSUES rationalised.** Closed out Track 4 (Session 12 carry-over). Added a definitive "Phase 2 carry-over" section listing every deliberate deferral — these are NOT to be touched before public launch unless customer-blocking.
+
+**Quality gates at end of Session 13:** typecheck ✓, lint ✓, build ✓. Route count unchanged (~165). Middleware unchanged at 80.8 kB.
+
+**Phase D readiness checklist:**
+- [x] All gates green
+- [x] Every spot-checked route returns 200
+- [x] Visual consistency verified at 1440 + 375
+- [x] No console errors during the walk
+- [x] KNOWN_ISSUES is the definitive deferred list
+- [x] SESSION_HANDOFF updated
+
+**Next session (14) — Phase D Pass 1 (Six-Pass Self-Review):**
+1. Pass 1 — Visual consistency sweep (re-walk every page; tabular tighten only)
+2. Pass 2 — Accessibility audit (keyboard, focus, screen-reader, contrast)
+3. Pass 3 — Performance + bundle audit (route sizes, ssg coverage, image weight)
+4. Pass 4 — SEO + metadata pass (titles, OG, sitemap, JSON-LD)
+5. Pass 5 — Error / edge-case coverage (empty states, 404/500, slow networks)
+6. Pass 6 — Outside-eye / launch checklist sweep
+
+---
+
 ## Current state — end of Session 12
 
 **Session phase:** Phase C closeout. Phase D (Five-Pass Self-Review) can begin Session 13 after cookie-banner + visual-polish carry-over.

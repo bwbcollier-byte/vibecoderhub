@@ -18,7 +18,7 @@ export function BookmarkChip(): React.ReactElement {
       href="/dashboard/bookmarks"
       aria-label={hasAny ? `${count} bookmarks` : 'Bookmarks'}
       className={cn(
-        'hide-mobile inline-flex items-center gap-1.5',
+        'hide-mobile hidden 2xl:inline-flex items-center gap-1.5 shrink-0',
         'h-btn-sm px-3 rounded-pill border cursor-pointer',
         'font-mono uppercase tracking-[1.2px] text-[10px] font-bold tabular-nums',
         'transition-colors duration-base ease-out',
