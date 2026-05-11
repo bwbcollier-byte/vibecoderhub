@@ -1,0 +1,298 @@
+/* ============================================================
+   THE VERGE DESIGN SYSTEM — CSS Custom Properties
+   colors_and_type.css
+   ============================================================
+   Font substitutions (proprietary originals unavailable):
+     Manuka       → Bebas Neue (Google Fonts)
+     PolySans     → DM Sans (Google Fonts)
+     PolySans Mono→ Space Mono (Google Fonts)
+     FK Roman Std → Newsreader (Google Fonts)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap');
+
+/* ============================================================
+   FONT FAMILIES
+   ============================================================ */
+:root {
+  --font-display:   'Bebas Neue', Impact, Helvetica, Arial, sans-serif;     /* Manuka substitute */
+  --font-sans:      'DM Sans', Helvetica, Arial, sans-serif;                /* PolySans substitute */
+  --font-mono:      'Space Mono', 'Courier New', Courier, monospace;        /* PolySans Mono substitute */
+  --font-serif:     'Newsreader', Georgia, serif;                           /* FK Roman Standard substitute */
+  --font-ui:        'DM Sans', -apple-system, system-ui, sans-serif;        /* Roboto substitute */
+}
+
+/* ============================================================
+   COLOR TOKENS — BASE
+   ============================================================ */
+:root {
+  /* Brand Hazards */
+  --color-mint:             #3cffd0;   /* Jelly Mint — primary CTA accent */
+  --color-ultraviolet:      #5200ff;   /* Verge Ultraviolet — secondary hazard */
+  --color-ultraviolet-90:   rgba(82, 0, 255, 0.9);
+
+  /* Secondary Accents */
+  --color-mint-border:      #309875;   /* Console Mint Border — card outlines on mint tiles */
+  --color-link-hover:       #3860be;   /* Deep Link Blue — hover on ALL links */
+  --color-focus:            #1eaedb;   /* Focus Cyan — keyboard focus rings only */
+  --color-purple-rule:      #3d00bf;   /* Purple Rule — StoryStream timeline rail */
+
+  /* Surfaces */
+  --color-canvas:           #131313;   /* Canvas Black — THE default background */
+  --color-surface:          #2d2d2d;   /* Surface Slate — secondary card bg */
+  --color-image-frame:      #313131;   /* Image Frame — 1px border on photography */
+
+  /* Neutrals */
+  --color-white:            #ffffff;   /* Hazard White — headlines, borders */
+  --color-black:            #000000;   /* Absolute Black — text on mint/yellow/white tiles */
+  --color-text-primary:     #ffffff;   /* Primary text on canvas */
+  --color-text-secondary:   #949494;   /* Secondary text — bylines, timestamps */
+  --color-text-muted:       #e9e9e9;   /* Muted — button text on dark slate */
+  --color-text-inverted:    #131313;   /* On accent tiles */
+  --color-dim:              #8c8c8c;   /* Active/pressed button bg */
+
+  /* Story Tile Accent Fills */
+  --color-tile-mint:        #3cffd0;
+  --color-tile-purple:      #5200ff;
+  --color-tile-yellow:      #f5e642;
+  --color-tile-pink:        #ff3cac;
+  --color-tile-orange:      #ff6b35;
+  --color-tile-blue:        #1e6efa;
+  --color-tile-white:       #ffffff;
+
+  /* Semantic */
+  --color-error:            #5200ff;   /* Ultraviolet used as error accent */
+  --color-overlay:          rgba(0, 0, 0, 0.33);
+}
+
+/* ============================================================
+   SPACING TOKENS
+   ============================================================ */
+:root {
+  --space-1:   1px;
+  --space-2:   2px;
+  --space-4:   4px;
+  --space-5:   5px;
+  --space-6:   6px;
+  --space-8:   8px;
+  --space-9:   9px;
+  --space-10:  10px;
+  --space-12:  12px;
+  --space-14:  14px;
+  --space-15:  15px;
+  --space-16:  16px;
+  --space-20:  20px;
+  --space-24:  24px;
+  --space-25:  25px;
+  --space-32:  32px;
+  --space-40:  40px;
+  --space-48:  48px;
+  --space-64:  64px;
+}
+
+/* ============================================================
+   BORDER RADIUS TOKENS
+   ============================================================ */
+:root {
+  --radius-input:     2px;   /* Inputs, small badges — typewriter feel */
+  --radius-image-sm:  3px;   /* Inline images */
+  --radius-image:     4px;   /* Nested card images */
+  --radius-tile:      20px;  /* Standard pill tiles */
+  --radius-feature:   24px;  /* Feature tile + primary button */
+  --radius-promo:     30px;  /* Large promotional buttons */
+  --radius-pill:      40px;  /* Outlined CTA pills */
+  --radius-circle:    50%;   /* Avatars, icon buttons */
+}
+
+/* ============================================================
+   ELEVATION / DEPTH TOKENS
+   ============================================================ */
+:root {
+  --elevation-0:    none;
+  --elevation-1:    0 0 0 0 transparent inset;               /* Reset */
+  --elevation-2:    0 0 0 1px var(--color-white);             /* Quiet card outline */
+  --elevation-3:    0 0 0 1px var(--color-mint);              /* Active / focused */
+  --elevation-4:    0 0 0 1px var(--color-ultraviolet);       /* Promo / alt state */
+  --elevation-5:    0 0 0 1px var(--color-overlay);           /* Atmospheric ring */
+  --elevation-nav:  0 -1px 0 0 var(--color-mint) inset;       /* Active tab underline */
+}
+
+/* ============================================================
+   TYPE SCALE — DISPLAY (Manuka / Bebas Neue substitute)
+   ============================================================ */
+:root {
+  /* Hero Wordmark */
+  --type-hero-size:         6.69rem;    /* 107px */
+  --type-hero-weight:       900;
+  --type-hero-lh:           0.95;       /* Bebas adjusted: +0.15 from Manuka's 0.80 */
+  --type-hero-ls:           0.07px;
+
+  /* Secondary Display */
+  --type-display-2-size:    5.63rem;    /* 90px */
+  --type-display-2-weight:  900;
+  --type-display-2-lh:      0.95;
+
+  /* Tertiary Display */
+  --type-display-3-size:    3.75rem;    /* 60px */
+  --type-display-3-weight:  900;
+  --type-display-3-lh:      0.95;
+}
+
+/* ============================================================
+   TYPE SCALE — HEADINGS (PolySans / DM Sans)
+   ============================================================ */
+:root {
+  --type-heading-xl-size:   2.13rem;    /* 34px — section headlines */
+  --type-heading-xl-weight: 700;
+  --type-heading-xl-lh:     1.00;
+
+  --type-heading-wide-size: 2.00rem;    /* 32px */
+  --type-heading-wide-wt:   400;
+  --type-heading-wide-lh:   1.10;
+  --type-heading-wide-ls:   0.32px;
+
+  --type-heading-md-size:   1.50rem;    /* 24px — story tile */
+  --type-heading-md-weight: 700;
+  --type-heading-md-lh:     1.00;
+
+  --type-heading-sm-size:   1.25rem;    /* 20px — compact tile */
+  --type-heading-sm-weight: 700;
+  --type-heading-sm-lh:     1.00;
+}
+
+/* ============================================================
+   TYPE SCALE — LABELS & BODY (PolySans / DM Sans)
+   ============================================================ */
+:root {
+  --type-label-light-size:  1.19rem;    /* 19px — thin capitalized eyebrow */
+  --type-label-light-wt:    300;
+  --type-label-light-lh:    1.20;
+  --type-label-light-ls:    1.9px;
+
+  --type-label-xl-size:     1.13rem;    /* 18px — UPPERCASE kickers */
+  --type-label-xl-wt:       400;
+  --type-label-xl-lh:       1.10;
+  --type-label-xl-ls:       1.8px;
+
+  --type-body-bold-size:    1.00rem;    /* 16px bold */
+  --type-body-bold-wt:      700;
+
+  --type-body-size:         1.00rem;    /* 16px reading body */
+  --type-body-wt:           500;
+  --type-body-lh:           1.60;
+
+  --type-inline-size:       0.94rem;    /* 15px — UI labels */
+  --type-inline-wt:         400;
+  --type-inline-lh:         1.20;
+  --type-inline-ls:         0.15px;
+
+  --type-caption-size:      0.81rem;    /* 13px */
+  --type-caption-wt:        400;
+  --type-caption-lh:        1.60;
+
+  --type-eyebrow-size:      0.75rem;    /* 12px UPPERCASE kicker */
+  --type-eyebrow-wt:        400;
+  --type-eyebrow-lh:        1.30;
+  --type-eyebrow-ls:        1.8px;
+
+  --type-tag-size:          0.75rem;    /* 12px UPPERCASE tag */
+  --type-tag-ls:            0.72px;
+
+  --type-micro-size:        0.69rem;    /* 11px UPPERCASE bylines */
+  --type-micro-ls:          1.1px;
+
+  --type-nano-size:         0.63rem;    /* 10px UPPERCASE timestamps */
+  --type-nano-wt:           500;
+  --type-nano-ls:           1.5px;
+}
+
+/* ============================================================
+   TYPE SCALE — MONO (PolySans Mono / Space Mono)
+   ============================================================ */
+:root {
+  --type-mono-btn-size:     0.75rem;    /* 12px — button label */
+  --type-mono-btn-wt:       700;        /* Space Mono only has 400/700 */
+  --type-mono-btn-lh:       2.00;
+  --type-mono-btn-ls:       1.5px;
+
+  --type-mono-ts-size:      0.69rem;    /* 11px — StoryStream timestamp */
+  --type-mono-ts-wt:        700;
+  --type-mono-ts-lh:        1.20;
+  --type-mono-ts-ls:        1.4px;
+}
+
+/* ============================================================
+   TYPE SCALE — SERIF (FK Roman / Newsreader)
+   ============================================================ */
+:root {
+  --type-serif-body-size:   1.00rem;    /* 16px */
+  --type-serif-body-wt:     400;
+  --type-serif-body-lh:     1.30;
+  --type-serif-body-ls:     -0.16px;
+
+  --type-serif-pull-size:   1.25rem;    /* 20px — pull quotes */
+  --type-serif-pull-wt:     400;
+  --type-serif-pull-lh:     1.20;
+}
+
+/* ============================================================
+   SEMANTIC ROLE ALIASES
+   ============================================================ */
+:root {
+  /* Backgrounds */
+  --bg-page:        var(--color-canvas);
+  --bg-card:        var(--color-canvas);
+  --bg-card-2:      var(--color-surface);
+  --bg-cta:         var(--color-mint);
+  --bg-cta-2:       var(--color-surface);
+
+  /* Text */
+  --text-default:   var(--color-text-primary);
+  --text-meta:      var(--color-text-secondary);
+  --text-on-mint:   var(--color-black);
+  --text-on-uv:     var(--color-white);
+  --text-link:      var(--color-white);
+  --text-link-hover:var(--color-link-hover);
+
+  /* Borders */
+  --border-card:    1px solid var(--color-white);
+  --border-card-mint: 1px solid var(--color-mint-border);
+  --border-image:   1px solid var(--color-image-frame);
+  --border-active:  1px solid var(--color-mint);
+  --border-promo:   1px solid var(--color-ultraviolet);
+  --border-input:   1px solid var(--color-text-secondary);
+  --border-input-focus: 1px solid var(--color-mint);
+
+  /* Type role aliases */
+  --font-h1:        var(--font-display);
+  --font-h2:        var(--font-display);
+  --font-h3:        var(--font-sans);
+  --font-h4:        var(--font-sans);
+  --font-body:      var(--font-sans);
+  --font-label:     var(--font-mono);
+  --font-kicker:    var(--font-mono);
+  --font-timestamp: var(--font-mono);
+  --font-article:   var(--font-serif);
+}
+
+/* ============================================================
+   BASE RESET (apply to design system consumers)
+   ============================================================ */
+.verge-base {
+  background: var(--bg-page);
+  color: var(--text-default);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global link hover */
+.verge-base a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+.verge-base a:hover {
+  color: var(--text-link-hover);
+}
