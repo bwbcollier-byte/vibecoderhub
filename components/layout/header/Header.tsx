@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
 import { cn } from '@/lib/shadcn/cn';
+import { useOverlays } from '@/components/overlays/OverlaysProvider';
+import { useStack } from '@/components/stack-context/StackProvider';
 
 import { MegaMenu } from './MegaMenu';
 
@@ -22,6 +24,8 @@ const TOP_NAV = [
 
 export function Header(): React.ReactElement {
   const pathname = usePathname();
+  const { openCmdK, openAuth, openStackPicker } = useOverlays();
+  const { stack } = useStack();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const isActive = (href: string): boolean =>
@@ -82,6 +86,7 @@ export function Header(): React.ReactElement {
         {/* Search trigger */}
         <button
           type="button"
+          onClick={openCmdK}
           className={cn(
             'hide-mobile inline-flex items-center gap-2',
             'bg-[#0a0a0a] border border-surface rounded-feature',
@@ -97,12 +102,34 @@ export function Header(): React.ReactElement {
           </span>
         </button>
 
+        {/* Stack chip */}
+        <button
+          type="button"
+          onClick={openStackPicker}
+          className={cn(
+            'hide-mobile inline-flex items-center gap-2',
+            'h-btn-sm px-3 rounded-pill border cursor-pointer',
+            'font-mono uppercase tracking-[1.2px] text-[10px] font-bold',
+            'transition-colors duration-base ease-out',
+            stack?.label
+              ? 'bg-mint/5 border-mint-border text-mint'
+              : 'bg-transparent border-surface text-text-secondary hover:text-white hover:border-white',
+          )}
+          aria-label="Update my stack"
+        >
+          <Icon.Layers size={11} />
+          <span className="truncate max-w-[160px]">
+            {stack?.label ?? 'Set your stack'}
+          </span>
+          <Icon.ChevDown size={11} />
+        </button>
+
         {/* Auth buttons */}
         <div className="hide-mobile flex items-center gap-2">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => openAuth('signin')}>
             Sign in
           </Button>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={() => openAuth('signup')}>
             Get started
           </Button>
         </div>

@@ -185,6 +185,97 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 7 — Foundation slice F overlays + Slice S02 (/mcps index + detail)
+
+**Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**Foundation slice F overlays — Cmd-K, AuthModal, StackPicker:**
+
+`components/overlays/OverlaysProvider.tsx` — single mount point + small imperative API (`openCmdK()` / `openAuth(mode)` / `openStackPicker()`) consumed by the header and other triggers. Owns the open-state for all three overlays. Registers the global ⌘K / Ctrl+K keybinding so the palette is reachable everywhere — including pages that don't render the header.
+
+`components/overlays/CmdK.tsx` — built on `cmdk` (pacocoursey/cmdk) which gives us arrow-key navigation, fuzzy filtering, focus trap, and a11y semantics for free. Layered on top:
+- Groups: Recent (from localStorage `vch_cmdk_recent`, last 6 entries) / Models / Actions (always visible).
+- Action commands: `Update my stack` / `Submit a resource` / `Open my dashboard` / `Browse all deals` / `Clear my stack` / `Sign out`. Each fires the right side-effect (navigate, open StackPicker, call `signOut()` from `lib/auth/client`).
+- Command mode: typing `>` flips the palette into action-only mode (matching Promptkit prototype). Search icon turns ultraviolet, "COMMAND MODE" badge appears.
+- Escape closes; ⌘K from inside toggles closed; click-outside closes.
+- Filter is `cmdk`-internal when not in command mode; command mode strips the `>` and does manual substring matching.
+
+`components/overlays/AuthModal.tsx` — built on the Radix Dialog primitive (Session 4 Boot Step 8). Two flows:
+- GitHub OAuth via `supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: '/auth/callback?next=…' } })`. Already wired to the Boot Step 6 auth callback handler — round-trip works end-to-end once a real Supabase project exists.
+- Magic link via `supabase.auth.signInWithOtp({ email })`. Renders an inbox-confirmation state on success.
+- Email/password intentionally NOT offered Phase 1 (per ANSWERS — GitHub primary, magic link fallback).
+- Sign-in ↔ sign-up mode toggle inline. Loading + error states wired.
+
+`components/overlays/StackPicker.tsx` — captures AI clients + tech-stack tags, persists via the existing `StackProvider` context (cookie `vch_stack`, ~6 month TTL — wired in Session 3). Above-the-fold: 6 curated preset cards from `lib/stack/presets.ts` (full 30-preset editorial seed lands when Ben provides the bundle per ANSWERS Q3.5). Below: 8 AI client pills + 27 tech-stack tag pills. Hardware capture deferred to Phase 2 with placeholder copy. Active preset auto-highlights with a mint border when the selected clients + tags match.
+
+`lib/stack/presets.ts` — 6 seed presets + the canonical AI client + tech-stack tag lists.
+
+`components/layout/header/Header.tsx` — wired:
+- Search trigger button → `openCmdK()`
+- Sign-in → `openAuth('signin')`, Get-started → `openAuth('signup')`
+- New "Set your stack" pill chip between search and auth → `openStackPicker()`. When a stack is active, the chip shows the label and renders in mint; otherwise a quiet "Set your stack" prompt.
+
+`app/providers.tsx` — `OverlaysProvider` slots inside `PostHogProvider`, wrapping `children` + toaster + cookie banner.
+
+**Slice S02 — `/mcps` index + `/mcps/[slug]` detail:**
+
+`lib/seed/mcps.ts` — 8 seed MCP records (GitHub, Supabase, Playwright, Filesystem, Stripe, Auth0, Linear, Vercel). Shape mirrors `resources ⋈ mcps` join. Each MCP has typed `tools[]` (with name + description + JSON Schema input), `resources[]` (URI templates), `prompts[]`. `listMcps()` / `getMcpBySlug()` / `sortMcps()` (4 sorts) / `filterMcps()` (search + client filter).
+
+`app/mcps/page.tsx` — Server Component. Hero kicker + count + brutalist `MCPS.` headline + handoff to `McpsList`.
+
+`app/mcps/_components/McpsList.tsx` — Client list. Search + client filter (All / Cursor / Claude Code / Windsurf / Cline / Claude Desktop in ultraviolet pills) + sort pills (Trending / Top rated / Most tools / Newest in mint) + Load-more pagination + skeleton + empty state + in-memory bookmarks. Editor's pick → ultraviolet variant at position 0, mint accent at position 4 (rhythmic offset; opposite of /models which puts mint at 0 / UV at 4, so the two indexes don't share the same first-accent color).
+
+`app/mcps/_components/McpCard.tsx` — Client Card. `tone` (`'dark' | 'mint' | 'uv'`) + `ribbon` props matching `ModelCard`'s pattern. Kicker (`⌖ MCP · author`), name link, tagline, surface-area stat strip (tools · resources · prompts), usage strip (★ rating · installs/wk · updated), compatible-client badges (capped at 4 + overflow count), bookmark icon-button top-right.
+
+`app/mcps/loading.tsx` — route-segment loading boundary (mirrors index layout).
+
+`app/mcps/[slug]/page.tsx` — Server Component detail. `generateStaticParams` prerenders all 8 slugs. Hero (mint kicker, brutalist display name, tagline, description, compatible-client badges) + 4-up surface-area stats strip (Tools / Resources / Prompts / Usage — Tools accented in mint) + hash-driven Tabs + right rail (Install actions, Alternatives list, Read-only-Inspector explainer).
+
+`app/mcps/[slug]/_components/McpDetailTabs.tsx` — Client tab content. 5 tabs (Overview / Tools / Resources / Prompts / Compatibility), all hash-routable. The Tools tab is the **read-only MCP Tool Inspector** (ANSWERS Q1.1 — live invocation deferred Phase 2). Each tool is an expandable accordion: click to reveal the JSON Schema input as a typed parameter list with required-marker tags. Resources and Prompts render as labeled lists of URI templates / canned-instruction names. Compatibility shows a verified-clients grid + stack tags.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green (after two `void`-the-promise tweaks in AuthModal — `@typescript-eslint/no-misused-promises` correctly flags `onClick={signInGithub}` and `onSubmit={sendMagic}` when the handler returns `Promise<void>`).
+- build: green — 22 routes (8 prerendered model details + 8 prerendered MCP details + statics). `/mcps` 5.84 kB / 121 kB first-load, `/mcps/[slug]` 4.2 kB / 120 kB. Middleware unchanged at 80.5 kB.
+- preview verification:
+  - ⌘K opens the palette globally (verified via `dispatchEvent(new KeyboardEvent('keydown',{key:'k',metaKey:true}))`). 14 rows render across Models + Actions groups.
+  - Typing "gemini" narrows to one row ("Gemini 3.1 Pro · $2.19/Mtok").
+  - "Set your stack" pill click opens the Stack Picker with 6 preset cards above the fold, 8 AI client pills, 27 tech-stack pills — verified visually.
+  - `/mcps` index renders the ultraviolet editor's-pick GitHub MCP card at position 0, mint Linear card at position 4, 6 dark cards otherwise.
+  - `/mcps/github-mcp` detail page: H1 "GitHub MCP.", tabs (Overview / Tools (24) / Resources (4) / Prompts (3) / Compatibility), `location.hash='tools'` correctly flips active tab + renders the tool inspector with first tool `list_issues`.
+
+### Decisions made this session
+
+- **D33 — Overlays mount once at the provider, not per-trigger.** Each overlay (CmdK, AuthModal, StackPicker) is a singleton inside `OverlaysProvider`. Triggers call `useOverlays()` to open / close. Avoids prop-drilling open-state through the header, and lets the global ⌘K keybinding live in one place. Pattern scales to the rest of the modal family (UpgradeModal, ClaimDealModal, CompareDrawer) without re-architecting.
+- **D34 — Use the `cmdk` library, don't hand-roll.** It already solves arrow-key navigation + focus management + `data-selected` state + a11y semantics. We layer recent-items + action-commands + group filtering on top. Time saved: ~2 days of keyboard-handling testing.
+- **D35 — Action-command mode (`>`) is *manual* substring filtering, not cmdk's filter.** cmdk's internal filter sees the raw query (`> stack`) and would discard rows that don't contain `>`. We strip the prefix and substring-match against an internal `value` string per row. Cleaner than fighting cmdk's filter API.
+- **D36 — Recent items live in localStorage, not the DB.** Keys: `vch_cmdk_recent`. Last 6 entries. Cookie / DB persistence is overkill for a per-device hint; logged-in users get the same surface from their bookmark list (Slice 5). Refresh wipes localStorage in Safari private mode — fall back to "no recents" gracefully.
+- **D37 — /models and /mcps use opposite editor's-pick accent colors.** /models = mint at position 0, ultraviolet at position 4. /mcps = ultraviolet at position 0, mint at position 4. So users browsing both indexes register the second one as "different" even though the chassis is identical. Small visual signal that pays off when we add a third (Slice S03+) index.
+- **D38 — Magic link in AuthModal sends to `/auth/callback?next=<current-path>`.** Drops the user back where they were instead of always to `/`. Cookie banner + global state survive because Supabase callback redirects to a server-rendered URL, not a hash route.
+- **D39 — Hardware capture is a Phase 2 placeholder.** StackPicker shows a stub explaining when it lands; doesn't ship a hardware input. Avoids prompting users for data we can't yet use (no recommendations engine — open-weights sizing deferred).
+
+### Deferred to Session 8
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- `/api/health` + `app/sitemap.ts` + `app/robots.ts` + `app/opengraph-image.tsx` (Foundation slice F leftover; SEO infra).
+- Bookmarks persistence (still in-memory).
+- Real OAuth round-trip — current AuthModal calls Supabase but there's no real Supabase project yet. Once Ben provisions one, the flow becomes live without code changes.
+- Cmd-K result ranking — currently models always show before actions. Add a relevance score when search is non-empty (matched models > all models, then matched actions, then everything).
+- Cookie banner z-index conflicts with overlays. Banner shows above the overlay backdrop when both are visible. Either dismiss banner when an overlay opens, or rework cookie banner to use a lower z-index than overlays.
+
+### Next session
+
+1. SEO infra (sitemap / robots / OG / `/api/health`) — small, atomic, can land in one batch.
+2. Slice S03 — `/components` index + detail (third resource type, exercises the registry on a non-model-non-MCP case).
+3. Sentry/Pino if DSN arrives.
+
+Gates green at end of Session 7. No mid-step deferrals.
+
+---
+
 ## Session 6 — Design polish (Tailwind v4 @theme + accent palette + tinted cards)
 
 **Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._

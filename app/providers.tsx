@@ -11,6 +11,7 @@ import { ReducedMotionProvider } from '@/components/theme/ReducedMotionProvider'
 import { StackProvider, type ActiveStack } from '@/components/stack-context/StackProvider';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import { CookieBanner } from '@/components/layout/cookie-banner/CookieBanner';
+import { OverlaysProvider } from '@/components/overlays/OverlaysProvider';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -28,14 +29,16 @@ export function Providers({
       <ThemeProvider initialTheme={initialTheme}>
         <StackProvider initialStack={initialStack}>
           <PostHogProvider>
-            {children}
-            <Toaster
-              theme="dark"
-              richColors
-              closeButton
-              position="bottom-right"
-            />
-            <CookieBanner />
+            <OverlaysProvider>
+              {children}
+              <Toaster
+                theme="dark"
+                richColors
+                closeButton
+                position="bottom-right"
+              />
+              <CookieBanner />
+            </OverlaysProvider>
           </PostHogProvider>
         </StackProvider>
       </ThemeProvider>

@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 6
+## Current state — end of Session 7
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 6 of ~30.
+**Session number:** 7 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -38,17 +38,24 @@
   - `app/models/[slug]/page.tsx` — Server Component detail. `generateStaticParams` prerenders all 8 slugs. Hero + 4-up stats strip + tabs + right rail (Try-it / Alternatives / Source).
   - `app/models/[slug]/_components/ModelDetailTabs.tsx` — Client wrapper over hash-driven Tabs. 4 panels: Overview / Pricing / Performance / Capabilities. Hash sync verified end-to-end via preview eval.
   - Build emits 14 routes (8 are SSG model details). Index 6 kB / 122 kB first-load. Detail 2.1 kB / 118 kB. Middleware 80.5 kB.
+- ✓ Session 7 — Foundation slice F overlays + Slice S02 `/mcps`.
+  - `components/overlays/{OverlaysProvider,CmdK,AuthModal,StackPicker}.tsx` + `lib/stack/presets.ts`. Single provider mounts all three modals + registers the global ⌘K keybinding. Cmd-K built on `cmdk` (groups: Recent / Models / Actions; `>` flips to command mode); AuthModal wraps Supabase GitHub OAuth + magic link; StackPicker has 6 preset cards above the fold + 8 AI clients + 27 tech-stack tags, persists to `vch_stack` cookie via the existing StackProvider.
+  - `Header.tsx` wired: search button → openCmdK, sign-in / get-started → openAuth, new "Set your stack" pill chip → openStackPicker.
+  - `lib/seed/mcps.ts` — 8 seed MCP records (resources ⋈ mcps shape) with typed tools / resources / prompts.
+  - `app/mcps/page.tsx`, `app/mcps/_components/{McpsList,McpCard}.tsx`, `app/mcps/loading.tsx`, `app/mcps/[slug]/page.tsx`, `app/mcps/[slug]/_components/McpDetailTabs.tsx`. Index has client + sort filters; detail has 5 tabs including a read-only MCP Tool Inspector that accordion-expands each tool to show its JSON Schema input.
+  - `generateStaticParams` prerenders all 8 MCP detail pages.
+  - Editor's-pick accent: /models uses mint at 0 + UV at 4; /mcps uses UV at 0 + mint at 4 (D37) for visual distinction.
 - ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
   - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
   - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `52e51ae` (`feat(models): boot step 12 + slice S01 — landing, /models index, /models/[slug]`) on branch `main`. Session 6's work is uncommitted on local fs at handoff.
+**Last commit:** `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`) on branch `main`, plus a follow-up adding error / not-found boundaries. Session 7's work is uncommitted on local fs at handoff.
 
-**4 quality gates at end of Session 6:** typecheck ✓, lint ✓, build ✓ — 14 routes (8 prerendered model detail SSGs). Index 6.38 kB (was 6 kB; +0.38 kB for tone variant logic), detail 2.1 kB unchanged, middleware 80.5 kB unchanged. Preview verified at 1440×900 + 375×812 — full Promptkit palette rendering.
+**4 quality gates at end of Session 7:** typecheck ✓, lint ✓, build ✓ — 22 routes (8 model details + 8 MCP details prerendered via generateStaticParams; statics + dynamic routes). `/mcps` 5.84 kB / 121 kB first-load, `/mcps/[slug]` 4.2 kB / 120 kB. Middleware unchanged at 80.5 kB. Preview verified: ⌘K opens globally, palette filtering works, Stack Picker renders 6 presets + AI clients + tech-stack tags, /mcps detail tool inspector accordion expands tools with JSON Schema.
 
-**Next planned:** Session 7 — Foundation slice F finishing touches (AuthModal + Stack Picker + Cmd-K stub + /api/health + sitemap + robots + OG image) and Slice S02 `/mcps` index + detail (will exercise the new `ModelCard` tone-variant pattern on a second resource type).
+**Next planned:** Session 8 — SEO infra (`app/sitemap.ts` + `app/robots.ts` + `app/opengraph-image.tsx` + `/api/health`) and Slice S03 `/components` index + detail (third resource type, non-model-non-MCP — exercises the chassis on a new shape).
 
 ---
 
