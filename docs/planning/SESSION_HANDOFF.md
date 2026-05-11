@@ -6,7 +6,44 @@
 
 ---
 
-## Current state — end of Session 13 — **READY FOR PHASE D**
+## Current state — end of Session 14 — **PHASE D COMPLETE · READY FOR LAUNCH REVIEW**
+
+**Session phase:** Phase D done. The Cowork build loop ends here. Next step is real-credential provisioning + a launch checklist run, not more Phase-C feature work.
+
+**Session 14 summary** — six-pass formal self-review.
+
+- ✓ **Pass 1 Visual Consistency** — sampled 8+ pages at 1440. Token system holds: 3 canonical button heights (32/36/48), card padding consistent (`p-5` / `rounded-tile` on resource cards; `p-8` on pillar+pricing tiles), Bebas/DM Sans/Space Mono pairing verified via `getComputedStyle`, mint/UV accent discipline intact, single Icon set, shared Skeleton + EmptyState primitives. **0 P0, 0 P1.**
+- ✓ **Pass 2 Functional Completeness** — newsletter signup (valid+invalid), firehose JSON+SSE, health endpoint, /models search (6→2 on "claude"), 4 sort buttons, bookmark toggle, Cmd-K via click AND keyboard shortcut (`window.dispatchEvent` confirmed open), Esc closes, ArrowDown navigates 40 results. Auth-gated routes redirect to `/?signin=1`. **0 P0, 0 P1.**
+- ✓ **Pass 3 Edge Cases** — invalid slugs render `not-found.tsx` UI (P1 caveat: dev returns 200 not 404; verify in prod build before launch), invalid sort param falls back, /compare with no/bad ids → EmptyState, /unsubscribe/short → "Already gone", /api/firehose?since=garbage → returns full feed, newsletter invalid/empty → 400, Cmd-K no-results state, Stack-Picker Save-disabled until selection. **0 P0, 1 P1 (manual prod-build status-code verification).**
+- ✓ **Pass 4 A11y + Perf** — single h1 per page, skip-link present, all form inputs labelled (explicit or implicit-wrap), focus rings visible, prefers-reduced-motion respected, body contrast ~16:1, bundles within budget (≤126 KB First-Load, well under 200 KB). **Lighthouse not run this session — owed before launch.** **0 P0, 1 P1 (Lighthouse audit).**
+- ✓ **Pass 5 User Journeys** — 4 personas (anon, returning, mobile, keyboard) walked end-to-end. All journeys complete. **0 P0, 0 P1, 2 P2** (mobile compare swipe affordance; bookmark below 2xl needs toast confirmation).
+- ✓ **Pass 6 Screenshot Review** — 10+ pages captured at 1440 + 375. Visual fidelity to Promptkit reference confirmed; no structural deviations (Session 6 `@theme` fix already unblocked the entire palette).
+- ✓ **OUTSIDE_EYE_CRITIQUE.md** — three top-priority fixes for a senior Linear/Vercel engineer to action first: (1) wire one real Drizzle query end-to-end against a populated dev Supabase project, (2) move firehose + ratelimit off in-process Map, (3) land Sentry + Pino (needs DSN).
+
+**Phase D findings files (`docs/phase-d/`):**
+- `PASS_1_FINDINGS.md` through `PASS_6_FINDINGS.md`
+- `OUTSIDE_EYE_CRITIQUE.md`
+
+**Quality gates at end of Session 14:** typecheck ✓, lint ✓, build ✓. **170 routes total** (up from 165 — `pnpm build` line-count includes SSG path enumeration which slightly differs from app-route count).
+
+**P0/P1 totals across all six passes:**
+- P0 found: **0**
+- P1 found: **2** — both are manual smoke tests owed pre-launch, not code fixes (prod-build 404 status verification, Lighthouse run).
+- P2 deferred: **3** (compare mobile affordance, bookmark below 2xl chip, secondary-text contrast spot-check)
+- P3 deferred: **multiple** — see KNOWN_ISSUES "Phase 2 carry-over" section.
+
+**Next step (not a Cowork session): launch readiness checklist run by Ben.**
+1. Provision real credentials (Supabase prod, Sentry DSN, PostHog, Resend domain, Stripe test).
+2. Wire one real query (start with `listModels()` → Drizzle).
+3. Run Lighthouse audit on `/`, `/models`, `/models/[slug]`, `/pricing` — desktop + mobile.
+4. `pnpm start` (production build) — verify `/models/nonexistent-slug` returns HTTP 404.
+5. Land Sentry + Pino once DSN provided.
+6. Move firehose + rate-limit off in-process Map to KV or Postgres-backed.
+7. Public launch.
+
+---
+
+## Current state — end of Session 13 — READY FOR PHASE D
 
 **Session phase:** Phase C closeout complete. Phase D (Six-Pass Self-Review) begins Session 14.
 
