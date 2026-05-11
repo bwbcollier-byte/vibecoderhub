@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 4
+## Current state — end of Session 5
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 4 of ~30.
+**Session number:** 5 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -29,14 +29,23 @@
   - Supporting: `lib/shadcn/cn.ts`, `lib/resource-types.ts` (24-type registry referencing `colors` from tokens), globals.css helpers (`.mono-caps` / `.tnum` / `.hairline-*` / `.skeleton` shimmer / `hide-{mobile,desktop}`), `eslint.config.mjs` adds `docs/**` to ignores.
   - Root wiring: `app/layout.tsx` mounts SkipLink + StackBanner + Header + main + Footer + MobileNav. `app/page.tsx` placeholder home so chrome renders in `pnpm dev`.
   - Step 5 (Sentry) still deferred — no DSN. Avatar / Popover / dedicated Pill primitives deferred to Session 5 (build when needed).
+- ✓ Session 5 — Boot Step 12 (real landing page) + Slice S01 (full /models index + /models/[slug] detail).
+  - `app/page.tsx` — real anonymous landing: hero + stats strip + 3-pillar tile cards + 4-column category browse + top-4-models teaser + Pro upgrade closer.
+  - `lib/seed/models.ts` — 8 seed model records matching the `resources ⋈ models` join shape. `listModels` / `getModelBySlug` / `sortModels` / `filterModels`. Drop-in for the eventual DB query.
+  - `app/models/page.tsx` — Server Component hero + count + delegation to `ModelsList`.
+  - `app/models/_components/{ModelsList,ModelCard}.tsx` — Client list with search + 5 sorts + open-weights filter + Load-more pagination + skeleton + empty state + in-memory bookmarks.
+  - `app/models/loading.tsx` — route-segment loading boundary (idiomatic for the eventual async query).
+  - `app/models/[slug]/page.tsx` — Server Component detail. `generateStaticParams` prerenders all 8 slugs. Hero + 4-up stats strip + tabs + right rail (Try-it / Alternatives / Source).
+  - `app/models/[slug]/_components/ModelDetailTabs.tsx` — Client wrapper over hash-driven Tabs. 4 panels: Overview / Pricing / Performance / Capabilities. Hash sync verified end-to-end via preview eval.
+  - Build emits 14 routes (8 are SSG model details). Index 6 kB / 122 kB first-load. Detail 2.1 kB / 118 kB. Middleware 80.5 kB.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `6aa2511` (`docs: move planning docs into repo for version control`) on branch `main`. Session 4's work is uncommitted on local fs at handoff.
+**Last commit:** `40a64fd` (`feat(ui,layout): boot steps 8-11 — primitives, icons, chrome, root wiring`) on branch `main`. Session 5's work is uncommitted on local fs at handoff.
 
-**4 quality gates at end of Session 4:** typecheck ✓, lint ✓ (zero warnings, zero errors after the `docs/**` ignore), build ✓ — `/` registers (138 B), `/auth/callback` unchanged, middleware unchanged at 80.7 kB. Preview server (`pnpm dev` on :3005) rendered desktop + mobile chrome with no console errors.
+**4 quality gates at end of Session 5:** typecheck ✓, lint ✓, build ✓ — 14 routes (8 prerendered model detail SSGs). Index 6 kB / 122 kB first-load, detail 2.1 kB / 118 kB, middleware 80.5 kB. Preview verified the full flow: landing → /models grid → search + sort + filter → click into detail → hash tab switching.
 
-**Next planned:** Session 5 — Boot Step 5 (Sentry+Pino — only if DSN provided) + Foundation slice (landing + home + AuthModal + Stack Picker + Cmd-K skeleton + /api/health + sitemap + robots + OG). Most of the primitives built in Session 4 get exercised here.
+**Next planned:** Session 6 — Foundation slice F finishing touches (AuthModal + Stack Picker + Cmd-K stub + /api/health + sitemap + robots + OG image) and Slice S02 `/mcps` index + detail (pattern-mirror of S01 with the MCP resource type).
 
 ---
 

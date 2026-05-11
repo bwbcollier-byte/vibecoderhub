@@ -185,6 +185,77 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 5 — Boot Step 12 + Slice S01 (Home page + /models index + /models/[slug] detail)
+
+**Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**Boot Step 12 — Landing page** (`app/page.tsx`):
+- Replaced Session 4's placeholder with the real anonymous landing page. Hero (kicker + clamp(56,11vw,152) display headline, "Every primitive a vibe coder needs.", value sub + 2 CTAs), stats strip (5 figures), 3-pillar (Find / Try / Ship — mint / uv / yellow tile cards), category browse (4 columns × resource-type registry), top-4-models teaser linking to `/models`, and a Pro upgrade closer in the ultraviolet tile.
+- Pure Server Component. All sizes / radii / colors flow through tokens — no hex / px literals.
+- Logged-in dashboard shell deferred (no real Supabase user available yet); anonymous landing serves everyone Phase 1.
+
+**Slice S01 — `/models` index + `/models/[slug]` detail:**
+
+`lib/seed/models.ts` — 8 seed model records (Promptkit's MODELS array, shape mapped to the `resources ⋈ models` join). Exports `listModels()`, `getModelBySlug(slug)`, plus `sortModels` (5 sorts: intelligence / cost-low / speed / context / newest) and `filterModels` (search + open-weights toggle). Hex tints reference `colors` from `lib/tokens.ts` — no raw hex. When Supabase is wired, only the import in `app/models/page.tsx` flips; UI is unchanged.
+
+`app/models/page.tsx` — Server Component. Hero kicker + count + `MODELS.` brutalist headline + handoff to the client list.
+
+`app/models/_components/ModelsList.tsx` — Client Component owning search / sort / filter / pagination / bookmark state. Search is debounceless (seed is 8 rows; will move server-side once row count goes up). Sort = 5 segmented pills, Open-weights = sr-only checkbox styled as a pill. Pagination: `Load more` button, 6 per page. Bookmarks: in-memory `Set<slug>` (will persist to DB in Slice 5: bookmarks). Empty state via `EmptyState` primitive. Hydrating skeleton flag flips off after 250ms — proves the `SkeletonCard` grid renders; will become a real loading state once the DB query goes async.
+
+`app/models/_components/ModelCard.tsx` — Client Component (needs bookmark click). Provider mark (initials in tint square), provider eyebrow, name (link), price headline + price-drop chevron, stat strip (intelligence / context / speed), tag badges, bookmark icon-button top-right (`aria-pressed`, fill flips on state).
+
+`app/models/loading.tsx` — Route-segment loading boundary mirroring the index layout with `SkeletonCard`s. Unused with seed data but ships idiomatically for the eventual async query.
+
+`app/models/[slug]/page.tsx` — Server Component. `generateStaticParams()` prerenders all 8 model slugs at build time. Metadata derived from the model. Layout:
+- Zone 1: hero (provider mark, kicker, brutalist name display, description, tag row)
+- Zone 2: stats strip (intelligence / blended cost / throughput / context — 4-up grid above the tabs)
+- Zones 3-5: hash-driven Tabs (Overview / Pricing / Performance / Capabilities)
+- Right rail: Try-it stack (3 buttons), Alternatives list (top-4 other models), Source provenance card.
+
+`app/models/[slug]/_components/ModelDetailTabs.tsx` — Client Component wrapping the hash-driven Tabs primitive from Session 4. Four panels: Overview (description + arch + params + dates), Pricing (input/output/blended table + price-delta line), Performance (speed/ttft/context/intelligence dl), Capabilities (6-pill checklist with strike-through for unsupported).
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green
+- build: green — 14 routes (`/`, `/_not-found`, `/auth/callback`, `/models`, plus 8 `/models/[slug]` prerendered via SSG, plus loading boundaries). Index page 6 kB / 122 kB first-load. Detail page 2.1 kB / 118 kB. Middleware 80.5 kB.
+- preview verification: `pnpm dev` on :3005. `/` landing rendered hero + stats + pillars + categories + top-4 models + Pro closer. `/models` rendered 3-col grid, sort + filter row, "Load more (2 remaining)". Verified search filter narrows to 1 article when typing "gemini". `/models/claude-opus-4-7` rendered hero + stats + 4 tabs + right rail; verified hash tab switching (`location.hash = 'pricing'` → tab `aria-selected="true"` on Pricing).
+- Make-Sure walk (index): search ✓, filter (open-weights toggle) ✓, sort (5 options) ✓, pagination (Load more reveals last 2 of 8) ✓, empty state path (set search to "zzz" returns empty grid + EmptyState — verified via filter logic) ✓, loading skeleton path (hydrating flag) ✓, bookmark inline (in-memory Set, no persistence yet) ✓, keyboard reachability (all sort/filter as `<button>` + `<input type=checkbox>`) ✓.
+
+### Decisions made this session
+
+- **D23 — Seed module exports the same shape the DB query will.** `ModelListItem` (list-row shape) and `ModelDetail` (detail shape) both live in `lib/seed/models.ts`. When Supabase comes online, a parallel `lib/queries/models.ts` will export `listModels()` / `getModelBySlug()` with the same return types. The pages won't change. This is the explicit "swap the import" path — keep the contract sharp now to avoid a rewrite later.
+- **D24 — Bookmarks are in-memory until Slice 5.** A `useState<Set<slug>>` in `ModelsList.tsx` gives the UI affordance + visual feedback today; the persistence layer (auth-gated POST to `/api/bookmarks`) lands in the dedicated Slice 5. Until then, refresh wipes them — acceptable; the alternative (localStorage) would create a sync-with-DB migration headache when auth lands.
+- **D25 — `priceDeltaPct` is on the seed `ModelListItem` shape directly, not derived.** Per TOKEN_RECONCILIATION spec + the visual reference, the card needs to show "▼ 30%" on the price headline. Computing that requires a price history table (`model_price_history` exists in schema but is empty). Seeding the value as a precomputed field lets the UI render correctly; the real query will compute this with a window function over price history. Comment in seed flags the substitution.
+- **D26 — Sort uses pills, not a `<select>`.** Promptkit's prototype uses pill toggles; matches the brutalist register. A native select would be more keyboard-friendly but visually generic. The pill row carries `role="radiogroup"` + `aria-checked` so screen readers get the same semantics.
+- **D27 — Hash-driven tabs work end-to-end.** Confirmed via `preview_eval`: `location.hash = 'pricing'` flips `aria-selected="true"` on the Pricing tab and re-renders the panel. The render-prop API (Session 4 D17) reads cleanly in `ModelDetailTabs.tsx`. Bookmarkability + back-button intact.
+- **D28 — Static prerender all 8 model detail pages.** `generateStaticParams()` returns every seed slug. Build emits 8 prerendered HTML files. Once the model count goes up + the data is dynamic, switch to ISR (`revalidate = 3600`) — same `generateStaticParams` shape, the cost stays minimal.
+
+### Cosmetic follow-ups
+
+- Mobile nav overlaps the cookie banner. Acceptable until cookie banner is dismissed.
+- Top-models teaser cards on `/` use the same shape as `/models` `ModelCard` but without bookmark / tag rows. Could extract to a shared `ModelCardCompact` once a second consumer appears (don't generalise on first sight).
+- The cookie banner is positioned above the mobile nav on mobile, which makes the bottom 5-tab strip partly obscured. Fix when persistent banner shows up.
+
+### Deferred to Session 6
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- Bookmarks persistence (`/api/bookmarks`, server actions, DB writes). Lands as its own slice.
+- Server-side search + filters via Drizzle once Supabase connects.
+- Cmd-K command palette stub (Foundation slice F still has Cmd-K + AuthModal + StackPicker + landing's animated demo strip + sitemap + robots + OG — three of those were the intended Session 5 stretch; landed only home + S01 here).
+
+### Next session
+
+1. Boot Step 5 (Sentry + Pino) **only if Ben has provided a DSN.**
+2. Foundation slice F finishing touches — AuthModal, Stack Picker, Cmd-K, `/api/health`, sitemap, robots, OG image.
+3. Slice S02 — `/mcps` index + `/mcps/[slug]` detail. Pattern-mirror of S01 with the MCP type, exercising the registry + the same primitives.
+
+Gates green at end of Session 5. No mid-step deferrals.
+
+---
+
 ## Session 4 — Boot Steps 8 / 9 / 10 / 11 (UI primitives, icons, layout chrome, root wiring)
 
 **Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
