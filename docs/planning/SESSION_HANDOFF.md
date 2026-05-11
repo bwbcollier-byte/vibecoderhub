@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 3
+## Current state — end of Session 4
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 3 of ~30.
+**Session number:** 4 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -22,14 +22,21 @@
 - ✓ Session 3 — `db/relations.ts` populated (51 blocks), Boot Step 6 (auth — 6 files + middleware modification), Boot Step 7 (root providers + cookie banner + root layout). Boot Step 5 (Sentry+Pino) skipped — needs DSN. Boot Step 8 deferred to Session 4.
   - Auth files: `lib/auth/{server,client,middleware,is-admin,return-to}.ts`, `app/auth/callback/route.ts`, middleware.ts modified.
   - Providers: `components/{theme/ThemeProvider,theme/ReducedMotionProvider,stack-context/StackProvider,analytics/PostHogProvider,layout/cookie-banner/CookieBanner}.tsx`, `app/providers.tsx`, `app/layout.tsx`.
+- ✓ Session 4 — Boot Steps 8 + 9 + 10 + 11 (UI primitives, icons, layout chrome, root wiring + placeholder home).
+  - Primitives (`components/ui/`): button, input, label, badge (+ TypeBadge), card, skeleton, empty-state, tooltip, dropdown-menu, dialog, drawer, toast (Sonner), tabs (hash-driven), icon-button.
+  - Icons: `components/icons/Icon.tsx` — 40 Lucide-style SVGs ported verbatim from Promptkit, 1.6px stroke.
+  - Chrome: `components/layout/{header/Header,header/MegaMenu,footer/Footer,mobile-nav/MobileNav,stack-banner/StackBanner,skip-link/SkipLink}.tsx`.
+  - Supporting: `lib/shadcn/cn.ts`, `lib/resource-types.ts` (24-type registry referencing `colors` from tokens), globals.css helpers (`.mono-caps` / `.tnum` / `.hairline-*` / `.skeleton` shimmer / `hide-{mobile,desktop}`), `eslint.config.mjs` adds `docs/**` to ignores.
+  - Root wiring: `app/layout.tsx` mounts SkipLink + StackBanner + Header + main + Footer + MobileNav. `app/page.tsx` placeholder home so chrome renders in `pnpm dev`.
+  - Step 5 (Sentry) still deferred — no DSN. Avatar / Popover / dedicated Pill primitives deferred to Session 5 (build when needed).
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `df7289a` (`chore: project skeleton + boot steps 1-4 (sessions 1-2)`) on branch `main`. Session 3's work is uncommitted on local fs.
+**Last commit:** `6aa2511` (`docs: move planning docs into repo for version control`) on branch `main`. Session 4's work is uncommitted on local fs at handoff.
 
-**4 quality gates at end of Session 3:** typecheck ✓, lint ✓ (zero warnings, zero errors), build ✓ (middleware 80.7 kB after Supabase SSR added; `/auth/callback` route registered as dynamic).
+**4 quality gates at end of Session 4:** typecheck ✓, lint ✓ (zero warnings, zero errors after the `docs/**` ignore), build ✓ — `/` registers (138 B), `/auth/callback` unchanged, middleware unchanged at 80.7 kB. Preview server (`pnpm dev` on :3005) rendered desktop + mobile chrome with no console errors.
 
-**Next planned:** Session 4 — Boot Step 5 (Sentry+Pino — needs DSN), Boot Steps 8-9 (UI primitives + icons), maybe Step 10 (layout chrome). Three steps that interact closely; land as one batch.
+**Next planned:** Session 5 — Boot Step 5 (Sentry+Pino — only if DSN provided) + Foundation slice (landing + home + AuthModal + Stack Picker + Cmd-K skeleton + /api/health + sitemap + robots + OG). Most of the primitives built in Session 4 get exercised here.
 
 ---
 

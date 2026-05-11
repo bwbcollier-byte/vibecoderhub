@@ -13,6 +13,11 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { Providers } from './providers';
+import { Header } from '@/components/layout/header/Header';
+import { Footer } from '@/components/layout/footer/Footer';
+import { MobileNav } from '@/components/layout/mobile-nav/MobileNav';
+import { StackBanner } from '@/components/layout/stack-banner/StackBanner';
+import { SkipLink } from '@/components/layout/skip-link/SkipLink';
 import type { ActiveStack } from '@/components/stack-context/StackProvider';
 
 const bebas = Bebas_Neue({
@@ -81,7 +86,14 @@ export default async function RootLayout({
     >
       <body>
         <Providers initialTheme={initialTheme} initialStack={initialStack}>
-          {children}
+          <SkipLink />
+          <StackBanner />
+          <Header />
+          <main id="main" className="min-h-[calc(100vh-60px)] pb-16 md:pb-0">
+            {children}
+          </main>
+          <Footer />
+          <MobileNav />
         </Providers>
       </body>
     </html>

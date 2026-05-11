@@ -1,3 +1,6 @@
+# Local-only Claude Code preview config (machine-specific)
+.claude/
+
 # Dependencies
 node_modules/
 .pnpm-store/

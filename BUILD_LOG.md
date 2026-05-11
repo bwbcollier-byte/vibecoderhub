@@ -182,3 +182,88 @@ Gates green at end of Session 3. No mid-step deferrals.
 ---
 
 ## (Future sessions append below)
+
+---
+
+## Session 4 — Boot Steps 8 / 9 / 10 / 11 (UI primitives, icons, layout chrome, root wiring)
+
+**Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**Boot Step 8 — UI primitives** (`components/ui/`):
+- `button.tsx` — 5 sizes × 5 variants (primary/secondary/ghost/uv/danger), `loading` prop with inline spinner, token-driven heights (`h-btn-{xs..xl}`), Promptkit mono-caps label treatment. Small sizes (xs/sm) get pill radius; md/lg/xl get feature radius per TOKEN_RECONCILIATION §6.
+- `input.tsx` — 3 sizes (sm/md/lg), 2px input radius (typewriter feel), mint border on focus, `error` prop wires `aria-invalid` + red border.
+- `label.tsx` — Radix Label, mono-caps text-meta styling.
+- `badge.tsx` — Badge (neutral/mint/uv/white/danger) + TypeBadge (uses documented `--space-9-exception` for padding-x; tint passed in as prop so the component knows nothing about the resource-type registry).
+- `card.tsx` — Card + CardHeader + CardTitle + CardMeta + CardFooter. 8 tones (dark/surface + 6 tile-accent variants for ResourceCard / NewsCard / DealCard reuse). `interactive` variant adds hover-mint border.
+- `skeleton.tsx` — Skeleton + SkeletonCard. New `.skeleton` keyframe in globals.css (linear shimmer matching Promptkit's `.skeleton`).
+- `empty-state.tsx` — large display glyph + title + body + action.
+- `tooltip.tsx` — Radix Tooltip primitive wrappers.
+- `dropdown-menu.tsx` — Radix DropdownMenu wrappers (Trigger / Content / Item / Label / Separator / Group).
+- `dialog.tsx` — Radix Dialog wrappers (Overlay + Content + Header/Body/Footer + Title + Description). Tile radius, scrim @ z-overlay, content @ z-modal.
+- `drawer.tsx` — Vaul wrappers — bottom-anchored mobile drawer with grab handle.
+- `toast.tsx` — Sonner Toaster + re-export. 4 kinds (info/success/error/warning) mapped to Promptkit tint colors with pill shape + mono-caps text.
+- `tabs.tsx` — purpose-built hash-driven Tabs (per ANSWERS B2). `window.location.hash` is the source of truth; `hashchange` listener syncs state; convertible to nested routes post-launch without API change at the component level.
+- `icon-button.tsx` — 3 sizes (32/40/48 square), 3 variants (ghost/solid/primary), `aria-label` enforced as a required prop.
+
+**Boot Step 9 — Icon system** (`components/icons/Icon.tsx`):
+- 40 Lucide-style SVGs ported verbatim from Promptkit's `Icon` object (search/close/chev/arrow/bookmark/star/share/check/copy/plus/minus/filter/bell/user/home/menu/external/download/play/command/zap/brain/eye/wrench/package/lock/alert/flame/sliders/rss/github/rocket/history/link/trending/coins/layers/compare/trash/edit/refresh).
+- Stroke width locked to 1.6 (Promptkit default). Size prop controls 24-viewbox SVG dimension. Each icon is a typed React component (`Icon.Search`, `Icon.Bookmark`, …). `aria-hidden` defaulted to `true` unless `aria-label` is supplied (a11y safety).
+
+**Boot Step 10 — Layout chrome** (`components/layout/`):
+- `header/Header.tsx` — sticky 60px-tall, max-xxl container, dark canvas bg. Top nav (Components/Models/MCPs/Tools/Deals/News/Guides) with active-state mint underline. Search-launcher button (⌘K keycap). Sign-in + Get-started buttons. Mobile: hamburger expands a vertical link drawer.
+- `header/MegaMenu.tsx` — "All 24 types ▾" trigger; hover-opens a 4-column grid (EXTENSIONS / PROMPTS / INFRA / CONTENT) sourced from `lib/resource-types.ts`. Z-dropdown layer.
+- `footer/Footer.tsx` — 5-column link grid (Browse / Discover / Money / Account / Company) + wordmark + tagline + social icons + © line. Bg `#0a0a0a` per Promptkit.
+- `mobile-nav/MobileNav.tsx` — fixed bottom 5-tab bar (Home / Search / Saved / News / Account); `usePathname()` for active state.
+- `stack-banner/StackBanner.tsx` — mobile-only sticky strip reading `useStack()` context; "EDIT" + dismiss buttons. Returns `null` when no stack.
+- `skip-link/SkipLink.tsx` — a11y skip-to-content link, styled via the existing `.skip-link` CSS.
+
+**Boot Step 11 — Root wiring + placeholder page:**
+- `app/layout.tsx` — wires SkipLink + StackBanner + Header + `<main id="main">` + Footer + MobileNav inside Providers.
+- `app/page.tsx` — minimal placeholder home so `pnpm dev` renders chrome (real Foundation slice lands Session 5).
+
+**Supporting changes:**
+- `lib/shadcn/cn.ts` — `clsx` + `tailwind-merge` helper.
+- `lib/resource-types.ts` — registry for the 24 resource types + 4-column mega-menu groups. References `colors` from `lib/tokens.ts` for tints; no raw hex (passes lint).
+- `app/globals.css` — appended `.mono-caps`, `.tnum`, `.hairline-{t,b}` helpers; `.skeleton` shimmer keyframe; modal/drawer/toast animation keyframes; `hide-mobile` / `hide-desktop` responsive helpers.
+- `eslint.config.mjs` — added `docs/**` to global ignores (planning docs + promptkit-recon prototype reference shouldn't lint; was 10 `no-undef` errors from `window` usage in the JSX prototype).
+- `.claude/launch.json` (user-level) — added `vch-dev` config so the preview tooling can drive `next dev --port 3005`.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green (after the `docs/**` ignore)
+- build: green — `/` registers (138 B), `/auth/callback` unchanged, middleware unchanged at 80.7 kB
+- preview verification: `pnpm dev` on :3005 rendered the placeholder home with header + nav + cookie banner; mobile preset (375×812) showed hamburger + bottom 5-tab nav. No console errors.
+
+### Decisions made this session
+
+- **D17 — Hash-based Tabs API shape.** `<Tabs items={…}>{(active) => …}</Tabs>` render-prop, not a Radix-style compound. Why: hash-driven semantics differ enough from Radix `Tabs.Root`/`Tabs.Content` (URL is source of truth, not internal state) that mimicking the shadcn surface would be misleading. Render-prop reads cleanly and converts to nested-route layouts without component-shape change. Reference for slice authors: `components/ui/tabs.tsx`.
+- **D18 — TypeBadge owns `--space-9-exception`.** Padding applied via `style={{ padding: '3px var(--space-9-exception)' }}`. Single documented consumer, matches the carve-out in TOKEN_RECONCILIATION §4 verbatim. No Tailwind utility exposed (intentional — keeps the exception narrow).
+- **D19 — Resource-type tint colors live in a registry that imports from `lib/tokens.ts`.** Rather than scatter `tileMint`/`tileBlue`/etc. constants in JSX or add `lib/resource-types.ts` to the lint-exempt list, the registry imports `colors` from tokens and references `colors.tileMint` etc. Single source of truth survives; no hex literals outside tokens.ts/tailwind.config.ts.
+- **D20 — Mega-menu group memberships.** Per Promptkit's `chrome.jsx` (Extensions = skill/subagent/plugin/hook/command/marketplace; Prompts = prompt/spec/rule/workflow; Infra = sandbox/observability/backend/docs-llm/eval; Content = component/asset/starter/showcase/stack/script). `tool`/`model`/`mcp` keep their dedicated top-level nav slots and are excluded from the mega-menu grid (else they'd appear twice). Total in mega-menu = 21; remaining 3 reachable via top nav. Documented in `lib/resource-types.ts`.
+- **D21 — Cards default to `tone="dark"` not `tone="surface"`.** Cards stack on a canvas-bg page; Promptkit's prototype uses `#131313` (canvas) for card bg with a `#2d2d2d` border, not the `#2d2d2d` surface fill. Surface tone reserved for nested or floating cards inside an already-canvas card.
+- **D22 — Button "small" maps to Promptkit's existing ~33px `.btn`, NOT to a 40px `md`.** TOKEN_RECONCILIATION §6 already settled this. Re-confirmed during chrome work: header sign-in/get-started render at `sm` (32px), matching Promptkit verbatim. `md` is reserved for the landing hero CTA + detail-page primary actions (Session 5).
+
+### Deferred to Session 5
+
+- Boot Step 5 (Sentry + Pino) — still no DSN. Carry-over.
+- Avatar primitive — Radix Avatar wrapper not built yet (lands alongside Foundation slice when auth UI needs a user-photo dropdown).
+- Popover primitive — Radix Popover wrappers, separate from Tooltip + DropdownMenu. Will land when the install-button options popover needs it (slice 1, model detail).
+- Pill primitive — Promptkit's `.pill` chip pattern. The look is reachable today via `Badge`/`Button` compositions; a dedicated `Pill` is only needed once Foundation hits stack-picker / filter UI.
+
+### Cosmetic follow-ups before Session 5
+
+Chrome rendered correctly but a Session-5-eye pass should:
+1. Nav links currently sit on letter-spacing alone; visual rhythm may improve with `gap-2` instead of `gap-1`.
+2. Mega-menu opens on hover only — should also open on focus + click for keyboard / touch parity.
+3. `Header` wordmark is hidden on mobile (matches Promptkit). If Ben wants a small "VCH" mark at the top, swap the `hide-mobile` to render a 24px mark always.
+4. `MobileNav` overlaps the cookie banner when both visible. Acceptable for a one-off banner; revisit if persistent.
+
+### Next session
+
+1. Boot Step 5 (Sentry + Pino) **only if Ben has provided a DSN** — otherwise skip again.
+2. Foundation slice: landing page, real home (with For-Your-Stack rail), AuthModal, Stack Picker overlay, Cmd-K skeleton, `/api/health`, sitemap, robots, OG. Exercises most of the primitives built this session.
+
+Gates green at end of Session 4. No mid-step deferrals.

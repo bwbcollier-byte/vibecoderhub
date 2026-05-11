@@ -26,6 +26,7 @@ export default [
       'playwright-report/**',
       'test-results/**',
       'db/migrations/0001_initial.sql', // canonical schema, untouchable
+      'docs/**', // planning docs + promptkit-recon reference prototype — not project source
     ],
   },
   js.configs.recommended,

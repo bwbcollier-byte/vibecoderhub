@@ -304,3 +304,85 @@ textarea:focus-visible,
 .skip-link:focus {
   top: var(--space-2);
 }
+
+/* ============================================================================
+   Utility classes referenced by component code
+   ============================================================================ */
+
+/* Mono-caps — Space Mono uppercase, used on buttons, kickers, tags. */
+.mono-caps {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Tabular-numerals — for stat readouts so digits don't dance. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline divider — 1px surface line, used between sections. */
+.hairline-t { border-top: var(--border-hairline); }
+.hairline-b { border-bottom: var(--border-hairline); }
+
+/* ============================================================================
+   Skeleton shimmer (Promptkit visual)
+   ============================================================================ */
+
+@keyframes vch-skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    #3a3a3a 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: vch-skeleton-shimmer 1.4s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================================
+   Modal / Drawer / Toast animations
+   ============================================================================ */
+
+@keyframes vch-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes vch-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes vch-slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes vch-slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes vch-slide-in-bottom {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ============================================================================
+   Hide on mobile / desktop helpers
+   ============================================================================ */
+
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 768px) {
+  .hide-desktop { display: none !important; }
+}
