@@ -1,0 +1,306 @@
+/* ============================================================================
+   Vibe Coder Hub — Global styles
+   ============================================================================
+   CSS variables mirror lib/tokens.ts. Component code references CSS variables
+   (var(--color-mint)) or Tailwind utilities (bg-mint). NEVER inline literal
+   hex / px / rem values — ESLint blocks hex literals; reviewers grep for px.
+   ============================================================================ */
+
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+/* ── Fonts via next/font are wired in app/layout.tsx, not @import ────────── */
+
+/* ============================================================================
+   :root — design tokens as CSS variables (mirror of lib/tokens.ts)
+   ============================================================================ */
+
+:root {
+  color-scheme: dark; /* light deferred to Phase 2 per ruling R3 */
+
+  /* ── Colours (Promptkit verbatim per TOKEN_RECONCILIATION §2) ─────────── */
+  --color-mint:             #3cffd0;
+  --color-ultraviolet:      #5200ff;
+  --color-ultraviolet-90:   rgba(82, 0, 255, 0.9);
+
+  --color-mint-border:      #309875;
+  --color-link-hover:       #3860be;
+  --color-focus:            #1eaedb;
+  --color-purple-rule:      #3d00bf;
+
+  --color-canvas:           #131313;
+  --color-surface:          #2d2d2d;
+  --color-image-frame:      #313131;
+
+  --color-white:            #ffffff;
+  --color-black:            #000000;
+  --color-text-primary:     #ffffff;
+  --color-text-secondary:   #949494;
+  --color-text-muted:       #e9e9e9;
+  --color-text-inverted:    #131313;
+  --color-dim:              #8c8c8c;
+
+  --color-tile-mint:        #3cffd0;
+  --color-tile-purple:      #5200ff;
+  --color-tile-yellow:      #f5e642;
+  --color-tile-pink:        #ff3cac;
+  --color-tile-orange:      #ff6b35;
+  --color-tile-blue:        #1e6efa;
+  --color-tile-white:       #ffffff;
+
+  --color-error:            #5200ff;
+  --color-error-red:        #ff6b6b;
+  --color-overlay:          rgba(0, 0, 0, 0.33);
+
+  /* ── Semantic role aliases ───────────────────────────────────────────── */
+  --bg-page:                var(--color-canvas);
+  --bg-card:                var(--color-canvas);
+  --bg-card-2:              var(--color-surface);
+  --bg-cta:                 var(--color-mint);
+  --bg-cta-2:               var(--color-surface);
+  --bg-overlay:             var(--color-overlay);
+
+  --text-default:           var(--color-text-primary);
+  --text-meta:              var(--color-text-secondary);
+  --text-on-mint:           var(--color-black);
+  --text-on-uv:             var(--color-white);
+  --text-link:              var(--color-white);
+  --text-link-hover:        var(--color-link-hover);
+  --text-error:             var(--color-error-red);
+
+  --border-card:            1px solid var(--color-white);
+  --border-card-mint:       1px solid var(--color-mint-border);
+  --border-image:           1px solid var(--color-image-frame);
+  --border-active:          1px solid var(--color-mint);
+  --border-promo:           1px solid var(--color-ultraviolet);
+  --border-input:           1px solid var(--color-text-secondary);
+  --border-input-focus:     1px solid var(--color-mint);
+  --border-hairline:        1px solid var(--color-surface);
+
+  /* ── Fonts (loaded via next/font in layout.tsx) ──────────────────────── */
+  --font-display:           'Bebas Neue', Impact, Helvetica, Arial, sans-serif;
+  --font-sans:              'DM Sans', Helvetica, Arial, sans-serif;
+  --font-mono:              'Space Mono', 'Courier New', Courier, monospace;
+
+  /* ── Spacing (4px-base; off-grid exception) ──────────────────────────── */
+  --space-px:               1px;     /* borders only */
+  --space-0-5:              2px;     /* borders only */
+  --space-1:                4px;
+  --space-2:                8px;
+  --space-3:                12px;
+  --space-4:                16px;
+  --space-5:                20px;
+  --space-6:                24px;
+  --space-8:                32px;
+  --space-10:               40px;
+  --space-12:               48px;
+  --space-16:               64px;
+  --space-20:               80px;
+  --space-24:               96px;
+  /* Documented exception — TypeBadge ONLY (TOKEN_RECONCILIATION §4). */
+  --space-9-exception:      9px;
+
+  /* ── Radii (11 slots per TOKEN_RECONCILIATION §5) ────────────────────── */
+  --radius-none:            0px;
+  --radius-xs:              2px;
+  --radius-sm:              4px;
+  --radius-md:              8px;
+  --radius-lg:              12px;
+  --radius-xl:              16px;
+  --radius-tile:            20px;
+  --radius-feature:         24px;
+  --radius-promo:           30px;
+  --radius-pill:            40px;
+  --radius-full:            9999px;
+
+  /* ── Button heights (5 locked) ───────────────────────────────────────── */
+  --btn-h-xs:               24px;
+  --btn-h-sm:               32px;
+  --btn-h-md:               40px;
+  --btn-h-lg:               48px;
+  --btn-h-xl:               56px;
+
+  /* Button-only padding tokens (NOT general spacing) */
+  --btn-py-xs:              6px;
+  --btn-py-sm:              10px;
+  --btn-py-md:              14px;
+  --btn-py-lg:              18px;
+  --btn-py-xl:              22px;
+  --btn-px-xs:              12px;
+  --btn-px-sm:              14px;
+  --btn-px-md:              18px;
+  --btn-px-lg:              24px;
+  --btn-px-xl:              32px;
+
+  /* ── Input heights (3 locked) ─────────────────────────────────────────── */
+  --input-h-sm:             32px;
+  --input-h-md:             40px;
+  --input-h-lg:             48px;
+
+  --input-py-sm:            7px;
+  --input-py-md:            11px;
+  --input-py-lg:            15px;
+  --input-px-sm:            10px;
+  --input-px-md:            12px;
+  --input-px-lg:            16px;
+
+  /* ── Z-index (8-tier) ─────────────────────────────────────────────────── */
+  --z-base:                 0;
+  --z-dropdown:             10;
+  --z-sticky:               20;
+  --z-overlay:              30;
+  --z-modal:                40;
+  --z-popover:              50;
+  --z-toast:                60;
+  --z-tooltip:              70;
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --duration-fast:          100ms;
+  --duration-base:          150ms;
+  --duration-slow:          300ms;
+  --ease-out:               cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:                cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out:            cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ── Focus ring (cyan colour, 2px stroke) ─────────────────────────────── */
+  --focus-ring-color:       var(--color-focus);
+  --focus-ring-width:       2px;
+  --focus-ring-offset:      2px;
+
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-sm:              0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:              0 4px 12px 0 rgba(0, 0, 0, 0.18);
+  --shadow-lg:              0 6px 20px 0 rgba(0, 0, 0, 0.4);
+  --shadow-xl:              0 12px 32px 0 rgba(0, 0, 0, 0.6);
+
+  /* ── Elevation (inset rings) ──────────────────────────────────────────── */
+  --elevation-quiet:        0 0 0 1px var(--color-white)        inset;
+  --elevation-active:       0 0 0 1px var(--color-mint)         inset;
+  --elevation-promo:        0 0 0 1px var(--color-ultraviolet)  inset;
+  --elevation-ring:         0 0 0 1px var(--color-overlay)      inset;
+  --elevation-nav-tab:      0 -1px 0 0 var(--color-mint)        inset;
+}
+
+/* ============================================================================
+   Light mode — DEFERRED to Phase 2 per ruling R3.
+   Architecture is light-ready; CSS variables can be re-defined under
+   .light or [data-theme="light"]. No light-mode CSS this build.
+   ============================================================================ */
+
+/* @media (prefers-color-scheme: light) {
+  :root { ... }
+} */
+
+/* ============================================================================
+   Reset + base
+   ============================================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg-page);
+  color: var(--text-default);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+}
+a:hover {
+  color: var(--text-link-hover);
+}
+
+/* ============================================================================
+   Custom scrollbar (subtle, dark-mode only)
+   ============================================================================ */
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--color-surface); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+
+::selection { background: var(--color-mint); color: var(--color-black); }
+
+/* ============================================================================
+   Focus rings — visible, never suppressed
+   ============================================================================ */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: inherit;
+}
+
+/* ============================================================================
+   prefers-reduced-motion — respect user preference
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+   Skip-to-content (a11y)
+   ============================================================================ */
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-mint);
+  color: var(--color-black);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 11px;
+  border-radius: var(--radius-feature);
+  z-index: var(--z-tooltip);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+}
