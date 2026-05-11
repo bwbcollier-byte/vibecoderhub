@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 5
+## Current state — end of Session 6
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 5 of ~30.
+**Session number:** 6 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -38,14 +38,17 @@
   - `app/models/[slug]/page.tsx` — Server Component detail. `generateStaticParams` prerenders all 8 slugs. Hero + 4-up stats strip + tabs + right rail (Try-it / Alternatives / Source).
   - `app/models/[slug]/_components/ModelDetailTabs.tsx` — Client wrapper over hash-driven Tabs. 4 panels: Overview / Pricing / Performance / Capabilities. Hash sync verified end-to-end via preview eval.
   - Build emits 14 routes (8 are SSG model details). Index 6 kB / 122 kB first-load. Detail 2.1 kB / 118 kB. Middleware 80.5 kB.
+- ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
+  - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
+  - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `40a64fd` (`feat(ui,layout): boot steps 8-11 — primitives, icons, chrome, root wiring`) on branch `main`. Session 5's work is uncommitted on local fs at handoff.
+**Last commit:** `52e51ae` (`feat(models): boot step 12 + slice S01 — landing, /models index, /models/[slug]`) on branch `main`. Session 6's work is uncommitted on local fs at handoff.
 
-**4 quality gates at end of Session 5:** typecheck ✓, lint ✓, build ✓ — 14 routes (8 prerendered model detail SSGs). Index 6 kB / 122 kB first-load, detail 2.1 kB / 118 kB, middleware 80.5 kB. Preview verified the full flow: landing → /models grid → search + sort + filter → click into detail → hash tab switching.
+**4 quality gates at end of Session 6:** typecheck ✓, lint ✓, build ✓ — 14 routes (8 prerendered model detail SSGs). Index 6.38 kB (was 6 kB; +0.38 kB for tone variant logic), detail 2.1 kB unchanged, middleware 80.5 kB unchanged. Preview verified at 1440×900 + 375×812 — full Promptkit palette rendering.
 
-**Next planned:** Session 6 — Foundation slice F finishing touches (AuthModal + Stack Picker + Cmd-K stub + /api/health + sitemap + robots + OG image) and Slice S02 `/mcps` index + detail (pattern-mirror of S01 with the MCP resource type).
+**Next planned:** Session 7 — Foundation slice F finishing touches (AuthModal + Stack Picker + Cmd-K stub + /api/health + sitemap + robots + OG image) and Slice S02 `/mcps` index + detail (will exercise the new `ModelCard` tone-variant pattern on a second resource type).
 
 ---
 

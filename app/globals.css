@@ -12,6 +12,114 @@
 /* ── Fonts via next/font are wired in app/layout.tsx, not @import ────────── */
 
 /* ============================================================================
+   Tailwind v4 @theme — registers token names as Tailwind utilities.
+   ============================================================================
+   v4 does NOT auto-read tailwind.config.ts here. Every utility name we want
+   (bg-mint, text-mint, border-surface, rounded-tile, h-btn-md, …) must be
+   declared as `--{namespace}-{name}` inside this block.
+   Values match lib/tokens.ts / TOKEN_RECONCILIATION.md verbatim. The legacy
+   `:root` block below stays as a CSS-variable mirror for code that reads
+   var(--color-mint) directly (skip-link, animations, inline styles).
+   ============================================================================ */
+
+@theme {
+  /* Colors */
+  --color-mint:            #3cffd0;
+  --color-ultraviolet:     #5200ff;
+  --color-mint-border:     #309875;
+  --color-link-hover:      #3860be;
+  --color-focus:           #1eaedb;
+  --color-purple-rule:     #3d00bf;
+  --color-canvas:          #131313;
+  --color-surface:         #2d2d2d;
+  --color-image-frame:     #313131;
+  --color-text-primary:    #ffffff;
+  --color-text-secondary:  #949494;
+  --color-text-muted:      #e9e9e9;
+  --color-text-inverted:   #131313;
+  --color-dim:             #8c8c8c;
+  --color-tile-mint:       #3cffd0;
+  --color-tile-purple:     #5200ff;
+  --color-tile-yellow:     #f5e642;
+  --color-tile-pink:       #ff3cac;
+  --color-tile-orange:     #ff6b35;
+  --color-tile-blue:       #1e6efa;
+  --color-tile-white:      #ffffff;
+  --color-error:           #5200ff;
+  --color-error-red:       #ff6b6b;
+
+  /* Fonts — wired to next/font CSS variables set in app/layout.tsx */
+  --font-display: var(--font-display), 'Bebas Neue', Impact, Helvetica, Arial, sans-serif;
+  --font-sans:    var(--font-sans),    'DM Sans', Helvetica, Arial, sans-serif;
+  --font-mono:    var(--font-mono),    'Space Mono', 'Courier New', Courier, monospace;
+
+  /* Border radii — 11-slot scale from TOKEN_RECONCILIATION §5 */
+  --radius-xs:      2px;
+  --radius-sm:      4px;
+  --radius-md:      8px;
+  --radius-lg:      12px;
+  --radius-xl:      16px;
+  --radius-tile:    20px;
+  --radius-feature: 24px;
+  --radius-promo:   30px;
+  --radius-pill:    40px;
+
+  /* Heights — buttons + inputs + icon buttons */
+  --height-btn-xs:   24px;
+  --height-btn-sm:   32px;
+  --height-btn-md:   40px;
+  --height-btn-lg:   48px;
+  --height-btn-xl:   56px;
+  --height-input-sm: 32px;
+  --height-input-md: 40px;
+  --height-input-lg: 48px;
+  --height-icon-sm:  32px;
+  --height-icon-md:  40px;
+  --height-icon-lg:  48px;
+  --width-icon-sm:   32px;
+  --width-icon-md:   40px;
+  --width-icon-lg:   48px;
+
+  /* Container max widths — overrides Tailwind's tiny defaults so max-w-xl is
+     1280px (page default) not 320px. */
+  --container-sm:    640px;
+  --container-md:    768px;
+  --container-lg:    1024px;
+  --container-xl:    1280px;
+  --container-xxl:   1440px;
+  --container-prose: 720px;
+
+  /* Spacing — explicit overrides so 4/8/16/24/etc. behave per the locked
+     scale even though Tailwind ships its own. The @theme namespace clobbers
+     defaults; we set the ones we use. */
+  --spacing: 4px;
+
+  /* Z-index tiers */
+  --z-base:     0;
+  --z-dropdown: 10;
+  --z-sticky:   20;
+  --z-overlay:  30;
+  --z-modal:    40;
+  --z-popover:  50;
+  --z-toast:    60;
+  --z-tooltip:  70;
+
+  /* Motion */
+  --transition-duration-fast: 100ms;
+  --transition-duration-base: 150ms;
+  --transition-duration-slow: 300ms;
+  --transition-timing-function-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-timing-function-in:     cubic-bezier(0.7, 0, 0.84, 0);
+  --transition-timing-function-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 6px 20px 0 rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 12px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================================================
    :root — design tokens as CSS variables (mirror of lib/tokens.ts)
    ============================================================================ */
 
@@ -192,8 +300,15 @@
 } */
 
 /* ============================================================================
-   Reset + base
+   Reset + base — INSIDE @layer base so Tailwind utilities win the cascade.
+   ============================================================================
+   Without @layer base, `button { background: transparent }` overrides
+   `.bg-mint { background-color: var(--color-mint) }` because unlayered CSS
+   wins over layered. Wrap base styles inside the base layer so utilities
+   (in @layer utilities) win when both apply.
    ============================================================================ */
+
+@layer base {
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -240,6 +355,8 @@ a {
 a:hover {
   color: var(--text-link-hover);
 }
+
+} /* end @layer base */
 
 /* ============================================================================
    Custom scrollbar (subtle, dark-mode only)

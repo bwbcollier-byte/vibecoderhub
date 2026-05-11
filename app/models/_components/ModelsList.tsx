@@ -157,12 +157,14 @@ export function ModelsList({ initialModels }: ModelsListProps): React.ReactEleme
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visible.map((m) => (
+            {visible.map((m, i) => (
               <ModelCard
                 key={m.slug}
                 model={m}
                 bookmarked={bookmarks.has(m.slug)}
                 onToggleBookmark={() => toggleBookmark(m.slug)}
+                tone={i === 0 ? 'mint' : i === 4 ? 'uv' : 'dark'}
+                ribbon={i === 0 ? "★ EDITOR'S PICK" : undefined}
               />
             ))}
           </div>

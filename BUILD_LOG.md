@@ -185,6 +185,64 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 6 — Design polish (Tailwind v4 @theme + accent palette + tinted cards)
+
+**Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
+
+### The root-cause find
+
+Session 5 shipped a page that was structurally correct but visually monochrome — no mint, no ultraviolet, no tile accents. Looked nothing like Promptkit despite the tokens being declared in `lib/tokens.ts` and `tailwind.config.ts`. **The cause was two unrelated CSS cascade bugs that compounded:**
+
+1. **Tailwind v4 doesn't auto-read `tailwind.config.ts`.** v4 expects tokens declared inline in CSS via a `@theme` block, or an explicit `@config` directive. The JS config file we shipped in Session 1 was silently inert — Tailwind generated only its default palette, so `bg-mint`/`text-mint`/`max-w-xl` all collapsed to either the closest default (`max-w-xl` rendered as 320px, not 1280px) or were never generated at all (`.bg-mint` was missing from the stylesheet entirely for resource-type-tinted utilities).
+2. **Unlayered base CSS beat layered utilities.** Even after `@theme` was added and `.bg-mint` started being emitted into `@layer utilities`, our `button { background: transparent }` reset rule (declared at the top level, outside any layer) still won. v4 utilities sit inside `@layer utilities` which is **weaker than unlayered CSS** in the cascade order. Result: utilities applied to every element EXCEPT the ones a base rule had touched first.
+
+The fix is two CSS edits, ~120 lines combined:
+
+- Added a Tailwind v4 `@theme { ... }` block in `globals.css` declaring `--color-*`, `--font-*`, `--radius-*`, `--height-*`, `--width-*`, `--container-*`, `--z-*`, `--transition-*`, `--shadow-*`. v4 generates `bg-mint`/`text-mint`/`rounded-tile`/`h-btn-md`/`max-w-xl`/etc. directly from these names. Values match `lib/tokens.ts` / `TOKEN_RECONCILIATION.md` verbatim.
+- Wrapped the reset + base rules (`*`, `html, body`, `button`, `input`, `a`) inside `@layer base { … }`. Now utilities (in `@layer utilities`) win the cascade.
+
+**Net effect:** every page that already had the right structure suddenly rendered with the full Promptkit palette. The hero kicker became mint. The "a vibe coder needs." span became mint. The 5 stats turned into 38px Bebas Neue mint figures. The 3-pillar cards filled with their mint/ultraviolet/yellow tile colors. The Pro CTA picked up its ultraviolet border. The header nav's active-state mint underline came back. Buttons rendered as mint pills with black text. Containers stretched to 1280px instead of 320px so the pillar grid no longer overlapped.
+
+The user's 8-point critique list reduces almost entirely to those two CSS edits. Problems 1 / 4 / 5 / 6 / 7 were all symptoms of the same root cause; problems 2 / 3 disappeared once `max-w-xl` and `grid-cols-3` started rendering at the right width.
+
+### Additional polish that landed
+
+- **`/models` editor's pick variant.** `ModelCard` now accepts `tone` (`'dark' | 'mint' | 'uv'`) + `ribbon` (e.g. `★ EDITOR'S PICK`). Tone drives a tokenized treatment of bg / kicker / headline hover / divider / stat / price color / drop chevron / tag-badge tone. `ModelsList` passes `tone="mint"` + the ribbon to position 0, `tone="uv"` to position 4, dark to the rest — matches Promptkit's prototype pattern of "one accent card per index, second accent at a rhythmic offset."
+- **Container widths registered in `@theme`.** `--container-sm/md/lg/xl/xxl/prose` so `max-w-xl` = 1280px (page default), `max-w-prose` = 720px (article column), `max-w-xxl` = 1440px (landing hero + detail page chassis).
+- **Heights for `h-btn-*` / `h-input-*` / `h-icon-*` registered.** Button/input/icon-button primitives were referencing these utility classes but Tailwind hadn't generated them. Now they render at the locked heights per TOKEN_RECONCILIATION §6/7/8.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green
+- build: green — 14 routes, `/models` 6.38 kB (was 6 kB; +0.38 kB for tone variant logic), `/models/[slug]` 2.1 kB unchanged, middleware unchanged at 80.5 kB.
+- preview verification — desktop (1440×900): hero / stats / pillars / categories / frontier-models / Pro CTA / footer all render Promptkit-faithful. /models grid renders mint editor's pick card position 0, UV card position 4, dark elsewhere. /models/[slug] renders mint tab underline + mint blended-cost stat + mint price headline.
+- preview verification — mobile (375×812): home hero scales correctly, brutalist headline wraps cleanly, mint kicker + highlight intact, sign-up button is a clear mint pill. /models grid stacks to single column with full-width tinted cards.
+
+### Decisions made this session
+
+- **D29 — Tailwind v4 single source of truth is `@theme` in `globals.css`, not `tailwind.config.ts`.** The JS config file is retained for documentation but only `@theme` actually configures the runtime. To add a new token, update `lib/tokens.ts` *and* mirror into the `@theme` block. (Eventually we should generate the `@theme` block from `lib/tokens.ts` at build time. For now the duplication is small enough that hand-mirroring is fine.)
+- **D30 — Base styles must live inside `@layer base`.** Codified as a rule. Future CSS edits that touch reset / base / element-level styles must be wrapped in `@layer base { ... }` or they'll silently win against the utility layer.
+- **D31 — Tinted card variants on `/models` use accent rhythm, not random.** Position 0 = mint (editor's pick), position 4 = UV. Pattern is stable across pages of results. When pagination loads more, positions 6 / 10 / etc. would get accents too — but only after a UX decision: the user's eye should be drawn forward, not pulled back. Leaving `tone='dark'` for positions > 5 until we have a heuristic (price drop > 25%? new release? unsupported open weights with high install velocity?) to pick the second mint card meaningfully.
+- **D32 — Mobile preview gates count as visual verification.** Both 1440 and 375 viewports verified per page before commit. Going forward, treat 375 as a first-class checkpoint, not an afterthought.
+
+### Deferred to Session 7
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- Foundation slice F finishing touches (AuthModal + Stack Picker + Cmd-K + /api/health + sitemap + robots + OG).
+- Tag-badge tones on tinted cards still render with low contrast in some cases — e.g. on the mint editor's pick card the "REASONING" / "TOOLS" / "VISION" / "CACHING" badges are outlined in white-on-mint which is legible but cramped. Visual review may want a dedicated "on-tile" badge tone with stronger contrast.
+- Auto-generate the `@theme` block from `lib/tokens.ts` at build time so the duplication is mechanically eliminated.
+
+### Next session
+
+1. Sentry / Pino if DSN arrives.
+2. Foundation slice F finishing touches.
+3. Slice S02 — `/mcps` index + detail. Will exercise the new `tone` prop pattern on a second resource type.
+
+Gates green at end of Session 6. No mid-step deferrals.
+
+---
+
 ## Session 5 — Boot Step 12 + Slice S01 (Home page + /models index + /models/[slug] detail)
 
 **Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
