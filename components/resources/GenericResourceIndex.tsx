@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Icon } from '@/components/icons/Icon';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/shadcn/cn';
+import { useBookmarks } from '@/components/bookmarks/BookmarksProvider';
 import {
   filterGeneric,
   sortGeneric,
@@ -44,7 +46,7 @@ export function GenericResourceIndex({ items, config }: Props): React.ReactEleme
   const [sort, setSort] = React.useState<GenericSort>('trending');
   const [client, setClient] = React.useState<string | null>(null);
   const [visiblePages, setVisiblePages] = React.useState(1);
-  const [bookmarks, setBookmarks] = React.useState<Set<string>>(new Set());
+  const bookmarks = useBookmarks();
   const [hydrating, setHydrating] = React.useState(true);
 
   React.useEffect(() => {
@@ -64,12 +66,17 @@ export function GenericResourceIndex({ items, config }: Props): React.ReactEleme
   const visible = filtered.slice(0, visiblePages * PAGE_SIZE);
   const hasMore = visible.length < filtered.length;
 
-  const toggleBookmark = (slug: string): void => {
-    setBookmarks((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
+  const toggleBookmark = (r: GenericResource): void => {
+    const id = `${config.typeId}:${r.slug}`;
+    if (!bookmarks.has(id) && bookmarks.atCap) {
+      toast.error(`Bookmark limit reached (${bookmarks.limit}). Upgrade for unlimited.`);
+      return;
+    }
+    bookmarks.toggle({
+      id,
+      type: config.typeId,
+      name: r.name,
+      href: `/${config.basePath}/${r.slug}`,
     });
   };
 
@@ -178,8 +185,8 @@ export function GenericResourceIndex({ items, config }: Props): React.ReactEleme
                 key={r.slug}
                 resource={r}
                 config={config}
-                bookmarked={bookmarks.has(r.slug)}
-                onToggleBookmark={() => toggleBookmark(r.slug)}
+                bookmarked={bookmarks.has(`${config.typeId}:${r.slug}`)}
+                onToggleBookmark={() => toggleBookmark(r)}
                 tone={i === 0 ? 'mint' : i === 4 ? 'uv' : 'dark'}
                 ribbon={i === 0 ? '★ EDITOR’S PICK' : undefined}
               />

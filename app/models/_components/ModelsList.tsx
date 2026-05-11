@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Icon } from '@/components/icons/Icon';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/shadcn/cn';
+import { useBookmarks } from '@/components/bookmarks/BookmarksProvider';
 import {
   filterModels,
   sortModels,
@@ -35,7 +37,7 @@ export function ModelsList({ initialModels }: ModelsListProps): React.ReactEleme
   const [sort, setSort] = React.useState<ModelSort>('intelligence');
   const [openOnly, setOpenOnly] = React.useState(false);
   const [visiblePages, setVisiblePages] = React.useState(1);
-  const [bookmarks, setBookmarks] = React.useState<Set<string>>(new Set());
+  const bookmarks = useBookmarks();
   // Loading skeleton flag — proves the skeleton path renders. Flips off after
   // one frame; real loading state lands when the DB query becomes async.
   const [hydrating, setHydrating] = React.useState(true);
@@ -58,12 +60,18 @@ export function ModelsList({ initialModels }: ModelsListProps): React.ReactEleme
   const visible = filtered.slice(0, visiblePages * PAGE_SIZE);
   const hasMore = visible.length < filtered.length;
 
-  const toggleBookmark = (slug: string): void => {
-    setBookmarks((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
+  const toggleBookmark = (model: ModelDetail): void => {
+    const id = `model:${model.slug}`;
+    const wasOn = bookmarks.has(id);
+    if (!wasOn && bookmarks.atCap) {
+      toast.error(`Bookmark limit reached (${bookmarks.limit}). Upgrade for unlimited.`);
+      return;
+    }
+    bookmarks.toggle({
+      id,
+      type: 'model',
+      name: model.name,
+      href: `/models/${model.slug}`,
     });
   };
 
@@ -161,8 +169,8 @@ export function ModelsList({ initialModels }: ModelsListProps): React.ReactEleme
               <ModelCard
                 key={m.slug}
                 model={m}
-                bookmarked={bookmarks.has(m.slug)}
-                onToggleBookmark={() => toggleBookmark(m.slug)}
+                bookmarked={bookmarks.has(`model:${m.slug}`)}
+                onToggleBookmark={() => toggleBookmark(m)}
                 tone={i === 0 ? 'mint' : i === 4 ? 'uv' : 'dark'}
                 ribbon={i === 0 ? "★ EDITOR'S PICK" : undefined}
               />

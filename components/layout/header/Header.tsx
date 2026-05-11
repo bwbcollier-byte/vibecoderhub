@@ -11,6 +11,7 @@ import { useOverlays } from '@/components/overlays/OverlaysProvider';
 import { useStack } from '@/components/stack-context/StackProvider';
 
 import { MegaMenu } from './MegaMenu';
+import { BookmarkChip } from './BookmarkChip';
 
 const TOP_NAV = [
   { href: '/components', label: 'Components' },
@@ -123,6 +124,8 @@ export function Header(): React.ReactElement {
           </span>
           <Icon.ChevDown size={11} />
         </button>
+
+        <BookmarkChip />
 
         {/* Auth buttons */}
         <div className="hide-mobile flex items-center gap-2">

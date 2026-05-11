@@ -12,6 +12,7 @@ import { StackProvider, type ActiveStack } from '@/components/stack-context/Stac
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import { CookieBanner } from '@/components/layout/cookie-banner/CookieBanner';
 import { OverlaysProvider } from '@/components/overlays/OverlaysProvider';
+import { BookmarksProvider } from '@/components/bookmarks/BookmarksProvider';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -29,16 +30,18 @@ export function Providers({
       <ThemeProvider initialTheme={initialTheme}>
         <StackProvider initialStack={initialStack}>
           <PostHogProvider>
-            <OverlaysProvider>
-              {children}
-              <Toaster
-                theme="dark"
-                richColors
-                closeButton
-                position="bottom-right"
-              />
-              <CookieBanner />
-            </OverlaysProvider>
+            <BookmarksProvider>
+              <OverlaysProvider>
+                {children}
+                <Toaster
+                  theme="dark"
+                  richColors
+                  closeButton
+                  position="bottom-right"
+                />
+                <CookieBanner />
+              </OverlaysProvider>
+            </BookmarksProvider>
           </PostHogProvider>
         </StackProvider>
       </ThemeProvider>

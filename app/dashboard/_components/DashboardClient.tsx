@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/icons/Icon';
 import { useOverlays } from '@/components/overlays/OverlaysProvider';
 import { useStack } from '@/components/stack-context/StackProvider';
+import { useBookmarks } from '@/components/bookmarks/BookmarksProvider';
 
 interface DashboardClientProps {
   username: string;
@@ -45,6 +46,8 @@ const CHANGES: ChangeRow[] = [
 export function DashboardClient({ username }: DashboardClientProps): React.ReactElement {
   const { stack } = useStack();
   const { openStackPicker } = useOverlays();
+  const { items: bookmarks, count: bookmarkCount } = useBookmarks();
+  const recentBookmarks = bookmarks.slice(0, 5);
 
   return (
     <main className="max-w-xl mx-auto px-4 md:px-8 py-10 pb-20">
@@ -96,15 +99,45 @@ export function DashboardClient({ username }: DashboardClientProps): React.React
 
         {/* Recent bookmarks */}
         <article className="border border-surface rounded-tile p-6 flex flex-col">
-          <div className="font-mono font-bold uppercase tracking-[1.5px] text-mint text-[10px] mb-3">
-            RECENT BOOKMARKS
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-mono font-bold uppercase tracking-[1.5px] text-mint text-[10px]">
+              RECENT BOOKMARKS
+            </div>
+            {bookmarkCount > 0 && (
+              <Link
+                href="/dashboard/bookmarks"
+                className="font-mono font-bold uppercase tracking-[1.5px] text-text-secondary hover:text-mint text-[10px]"
+              >
+                All {bookmarkCount} →
+              </Link>
+            )}
           </div>
-          <EmptyState
-            glyph="☆"
-            title="No bookmarks yet"
-            body="Your bookmarks will appear here. Persistence ships in Slice 5."
-            className="py-6 px-0 flex-1"
-          />
+          {recentBookmarks.length === 0 ? (
+            <EmptyState
+              glyph="☆"
+              title="No bookmarks yet"
+              body="Star resources from any index — they'll save instantly."
+              className="py-6 px-0 flex-1"
+            />
+          ) : (
+            <ul className="flex flex-col flex-1">
+              {recentBookmarks.map((b) => (
+                <li key={b.id}>
+                  <Link
+                    href={b.href}
+                    className="flex items-center justify-between gap-3 py-2 border-b border-surface last:border-b-0 group"
+                  >
+                    <span className="font-mono uppercase tracking-[1.2px] text-[9px] font-bold text-mint min-w-[44px]">
+                      {b.type}
+                    </span>
+                    <span className="text-[13px] text-white group-hover:text-link-hover transition-colors duration-base ease-out flex-1 truncate">
+                      {b.name}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
 
         {/* What's changed */}
