@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 9
+## Current state — end of Session 10
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 9 of ~30.
+**Session number:** 10 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -58,19 +58,26 @@
   - 16-type batch closeout — every remaining `resource_type` enum (tools, hooks, commands, starters, workflows, evals, showcase, sandboxes, observability, backends, assets, docs-for-llms, specs, stacks, scripts, marketplaces) now has a working index + detail. 3 seed entries each. Page wrappers stamped via `/tmp/stamp_pages.sh`.
   - `app/sitemap.ts` walks every bundle reflectively + lists deals/news/guides. New types pick up SEO for free.
   - Build emits 141 routes total. Middleware unchanged at 80.8 kB.
+- ✓ Session 10 — Cmd-K expansion + /dashboard + /submit + /settings (parallel subagents).
+  - `components/overlays/CmdK.tsx` rewritten to search across every seed bundle in `_configs` + models + MCPs + deals + news + guides (~70 entries). New `buildIndex()` returns `SearchEntry[]` grouped by type via stable `GROUP_ORDER`. Each row renders a TypeBadge-style chip on the left so users can distinguish types at a glance. Recents persist full entry so cross-type history works.
+  - `/dashboard` (protected) — Server `auth()` gate → redirect to `/?signin=1` if anon. Kicker + brutalist "Welcome back." + 3-column grid (Your stack mint-border + openStackPicker, Recent bookmarks EmptyState stub, What's changed 3-row stub) + 4-button Quick Actions row + Saved-stacks placeholder.
+  - `/submit` (protected) — 4-step wizard (Type → Details → Compatibility → Review). Mint step dots, Zod schema (`_schema.ts`), per-field inline errors, 600 ms fake submit → success state. TODO Slice S24 for real POST. 19 kB client bundle (Zod).
+  - `/settings` (protected) — Tabs-driven (Profile / Stack / Subscription / Danger). Profile form fakes 400 ms save → toast. Subscription "Upgrade to Pro" → openUpgrade. Danger zone opens DeleteAccountModal — Radix Dialog with email-match gate before the danger button enables.
+  - Process: Cmd-K landed on the main thread (touches shared overlay code), then 3 subagents built dashboard / submit / settings in parallel (~14 min wall-clock vs ~45-60 min sequential). Subagents adapted to the real `auth()` export rather than the prompt's mistaken `getServerUser` reference.
+  - Build emits 145 routes total. New routes: `/dashboard` 1.77 kB, `/settings` 3 kB, `/submit` 19 kB. Middleware unchanged at 80.8 kB. Protected routes verified to 307 → `/?signin=1` when anon.
 - ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
   - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
   - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `f0610dd` (`feat(seo,resources): sitemap+robots+OG, shared chassis, S03-S08 batch`) on branch `main`. Session 9's work is uncommitted on local fs at handoff.
+**Last commit:** `d1d0f97` (`feat(deals,news,guides,types): S09/S10/S11 + 16-type closeout`) on branch `main`. Session 10's work is uncommitted on local fs at handoff.
 
 **Earlier checkpoint commits on `main`:** `50a1d7d` (`fix(app): add error / global-error / not-found route boundaries`), `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`), `52e51ae` (Session 5 models), `40a64fd` (Session 4 chrome), `6aa2511` (planning docs in repo), `9202881` (Session 3 auth + providers), `df7289a` (Sessions 1-2 skeleton).
 
-**4 quality gates at end of Session 9:** typecheck ✓, lint ✓, build ✓ — **141 routes total**. 24 resource-type indexes + ~70 prerendered SSG details + /deals + /news (index + 8 articles + site-wide RSS + 6 per-kind RSS) + /guides (index + 4 stepper details) + sitemap + robots + 18 OG image variants + `/api/health` + statics. Middleware unchanged at 80.8 kB. Curl-verified after a fresh dev restart: `/deals`, `/news`, `/news/opus-47-price-cut`, `/news/feed.rss`, `/news/feed/releases.rss`, `/guides`, `/guides/install-qwen-mac`, `/tools`, `/marketplaces/smithery`, `/sitemap.xml` all return 200; RSS body is well-formed XML.
+**4 quality gates at end of Session 10:** typecheck ✓, lint ✓, build ✓ — **145 routes total** (141 from Session 9 + `/dashboard` + `/submit` + `/settings` + the expanded Cmd-K's runtime additions). Middleware unchanged at 80.8 kB. Curl-verified: `/` 200, `/dashboard`/`/submit`/`/settings` all return 307 → `/?signin=1` (protected-route gate works), `/news/feed.rss` 200. Cmd-K index now spans every resource type + deals + news + guides (~70 entries).
 
-**Next planned:** Session 10 — Cmd-K expansion across all 24 resource types from `_configs`, `/dashboard` for logged-in users (bookmarks / saved stacks / alerts), `/submit` flow (paste GitHub URL → auto-detect type → preview → submit), and Sentry + Pino if DSN arrives.
+**Next planned:** Session 11 — `/compare` page (multi-resource side-by-side), bookmarks persistence (`/api/bookmarks` + DB), proper return-to via `lib/auth/return-to.ts`, Sentry + Pino if DSN arrives.
 
 ---
 

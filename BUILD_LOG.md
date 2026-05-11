@@ -185,6 +185,86 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 10 — Cmd-K expansion + /dashboard + /submit + /settings (parallel)
+
+**Date:** 2026-05-12. **Branch:** `main`. **Commit:** _pending at session end._
+
+### Process — parallel subagents
+
+This was the first session that ran four tracks side-by-side. Track A (Cmd-K) ran on the main thread because it touches shared overlay code; once it landed, three subagents built `/dashboard` + `/submit` + `/settings` in parallel — each with isolated file paths, no shared writes. Total wall-clock: ~14 min including integration + lint fixes. Sequential would have been ~45–60 min by feel.
+
+### What landed
+
+**Track A — Cmd-K expansion across the entire directory:**
+- `components/overlays/CmdK.tsx` rewritten. New `buildIndex()` walks models + MCPs + every bundle in `lib/seed/_configs` + deals + news + guides, producing a unified `SearchEntry[]` with `{ id, label, meta, value, groupLabel, glyph, tint, href }`.
+- `groupBy()` + a stable `GROUP_ORDER` constant render results under per-type section headings. Empty groups don't render — cmdk's filter shows only what matches.
+- Each row gets a TypeBadge-style chip on the left (`bg-{tint}/13 text-{tint}` rounded square with the type glyph) so users can distinguish `component` from `skill` at a glance.
+- Recent items now persist the full target (id / label / groupLabel / glyph / tint / href) so the Recent group also renders correctly across all types.
+- Search across the directory ≈70 entries (8 models + 8 MCPs + 4×6 generic + 3×16 batch + 10 deals + 8 news + 4 guides). cmdk's fuzzy filter is fast enough — no debouncing needed.
+
+**Track B — `/dashboard` (`app/dashboard/page.tsx` + `_components/DashboardClient.tsx`):**
+- Server Component gates on `auth()` (the actual export — subagent caught that the prompt referenced a non-existent `getServerUser` and adapted).
+- Redirects to `/?signin=1` if unauthenticated (TODO Slice 5 swap for return-to).
+- Layout: kicker + brutalist "Welcome back." headline → 3-column grid (Your stack [mint border, Edit-stack button fires `openStackPicker()`], Recent bookmarks [EmptyState], What's changed [3 placeholder rows with mint kickers linking to detail pages]) → Quick actions row of 4 buttons (Submit / Browse deals / Update stack / Open settings) → Saved-stacks placeholder.
+
+**Track C — `/submit` (`app/submit/page.tsx` + `_components/SubmitWizard.tsx` + `_schema.ts`):**
+- 4-step wizard: Type → Details → Compatibility → Review.
+- Mint step indicator dots matching the ClaimDealModal pattern.
+- Zod schema for input validation (3-80 char name, 10-140 char tagline, valid URL, 50-2000 char description, ≥1 client). Per-field inline errors.
+- Step 1: grid of resource-type buttons sourced from `RESOURCE_TYPES`.
+- Step 3: checkbox grid of `AI_CLIENTS` from `lib/stack/presets`.
+- Step 4: read-only summary + mint "Submit for review →" button. On submit, fakes a 600ms delay then shows success state. TODO Slice S24 hooks the real POST.
+- 19 kB client bundle — Zod ships with the route (acceptable for a multi-step wizard; future routes that need lighter validation can import a thinner subset).
+
+**Track D — `/settings` (`app/settings/page.tsx` + `_components/SettingsClient.tsx` + `_components/DeleteAccountModal.tsx`):**
+- Tabs-driven (hash-routable via the existing `components/ui/tabs.tsx`): Profile / Stack / Subscription / Danger.
+- Profile: display name + bio (styled `<textarea>` matching `Input`) + avatar URL + website + Twitter handle. Save fakes a 400ms delay then `toast.success('Profile saved')`.
+- Stack: shows `stack.label` or "No stack set yet" + "Edit my stack →" button.
+- Subscription: tier = "Free". UV "Upgrade to Pro" fires `openUpgrade({ triggerLabel: 'Pro subscription', triggerValueUsd: 99 })`. "Manage subscription" disabled with TODO caption for Slice 20.
+- Danger zone: `bg-error-red/5 border-error-red` callout + danger "Delete my account" button → DeleteAccountModal.
+- DeleteAccountModal: Radix Dialog. Two-step confirm — user types their email exactly to enable the danger "Yes, delete my account" button. On confirm: `console.error('TODO Slice 26')` + `toast.error('Account deletion is not yet wired')`.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green (after two `void`-the-promise tweaks in SettingsClient + SubmitWizard, plus one CmdK hex literal → `colors.tileMint`)
+- build: green — 145 routes total. New routes: `/dashboard` 1.77 kB, `/settings` 3 kB, `/submit` 19 kB (Zod bundle). Middleware unchanged at 80.8 kB.
+- preview verification: `/dashboard`, `/submit`, `/settings` all return **307 redirects** to `/?signin=1` when unauthenticated (the protected-route gate fires). `/news/feed.rss` still 200.
+
+### Decisions made this session
+
+- **D54 — Run independent routes via parallel subagents when no shared files overlap.** Pre-flight: identify what each task writes. If write sets disjoint, fire them concurrently. Wall-clock saving is real (~3× on this session). When tasks DO share files (Cmd-K touched OverlaysProvider + the shared search source), run them sequentially on the main thread first.
+- **D55 — Subagents must adapt when prompts reference non-existent APIs.** All three subagents found that `getServerUser` from `@/lib/auth/server` doesn't exist; the real export is `auth()` (returns `{ user } | null`) + `requireUser()`. Each subagent independently surfaced this, looked at the actual exports, and used `auth()` — matching the existing pattern. Pattern: subagents read the destination module first, not just take the prompt at face value.
+- **D56 — Cmd-K search index is a flat array built at component mount, not a query-time iterator.** ~70 entries fit in memory; `useMemo` makes the build O(n) once. When the catalogue scales past ~500 entries we'll move to a server endpoint with tsvector ranking (per ANSWERS Q2.5); same Component API.
+- **D57 — Protected route pattern: server-side `auth()` check + `redirect('/?signin=1')`.** Phase 1 stub — Slice 5 swaps for proper return-to via `lib/auth/return-to.ts`. Until then, the user lands on `/` with a query param the AuthModal trigger (Header) can read on mount.
+- **D58 — DeleteAccountModal uses email-match gate, not just a checkbox.** Higher friction matches Q3.1's "soft-30-then-hard delete + PII scrub" semantics — the user types the actual address that's about to be scrubbed. Matches GitHub / Stripe / Vercel danger-zone conventions.
+
+### Cosmetic / open items
+
+- `/dashboard` "Recent bookmarks" + "Saved stacks" sections render EmptyState placeholders until persistence lands (Slice 5).
+- `/submit` step indicator works but doesn't yet show the form payload during navigation back/forward — saved state is in component state only, refresh wipes it. Acceptable Phase 1; can hydrate from localStorage if drop-off becomes a problem.
+- DeleteAccountModal email-match is case-sensitive. Real users will get tripped by phone keyboards autocapitalizing the first char. Phase 2: case-insensitive compare after `.trim()`.
+
+### Deferred to Session 11
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- Return-to via `lib/auth/return-to.ts` (Slice 5).
+- `/compare` page (referenced in the Cmd-K menu but no route yet).
+- Bookmarks persistence + `/dashboard` populated from real data.
+- `/submit` real POST + admin review queue (Slice S24).
+- Cmd-K "type filter" prefixes (`>models foo`, `>mcps bar`) deferred — the unified search across all types is good enough for now; type-scoped filters arrive when the result set saturates the visible rows.
+
+### Next session
+
+1. `/compare` page — multi-resource side-by-side comparison.
+2. Bookmarks persistence (`/api/bookmarks` + DB).
+3. Real auth round-trip if Supabase project provisions.
+4. Sentry/Pino if DSN.
+
+Gates green at end of Session 10. No mid-step deferrals.
+
+---
+
 ## Session 9 — Slices S09 / S10 / S11 + 16-type batch closeout
 
 **Date:** 2026-05-12. **Branch:** `main`. **Commit:** _pending at session end._
