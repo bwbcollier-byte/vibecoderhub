@@ -114,23 +114,20 @@ export function PricingClient(): ReactElement {
           { label: 'Compare up to 4 resources' },
         ]}
         cta={
-          <Link href="/" className="w-full">
+          <Link href="/models" className="w-full">
             <Button variant="secondary" size="lg" block>
-              Browse anonymously
+              Browse free →
             </Button>
           </Link>
         }
       />
 
-      {/* MEMBER — recommended */}
+      {/* MEMBER */}
       <PricingCard
         kicker="MEMBER"
-        kickerTone="mint"
         price="$0"
         priceSub="/year"
         blurb="Free account. Bookmark, submit, and track stacks across devices."
-        recommended
-        borderClass="border-mint-border"
         features={[
           { label: 'Everything in Free' },
           { label: 'Unlimited bookmarks' },
@@ -151,14 +148,15 @@ export function PricingClient(): ReactElement {
         }
       />
 
-      {/* PRO */}
+      {/* PRO — recommended, mint-accented */}
       <PricingCard
-        kicker="PRO"
-        kickerTone="uv"
+        kicker="PRO · 14-DAY FREE TRIAL"
+        kickerTone="mint"
         price="$99"
         priceSub="/year"
         blurb="Unlock $4.2M+ in deals, the hosted gateway, and the full API."
-        borderClass="border-ultraviolet"
+        recommended
+        borderClass="border-mint-border"
         features={[
           { label: 'Everything in Member' },
           { label: 'Pro deals ($4.2M+ in offers)' },
@@ -171,14 +169,14 @@ export function PricingClient(): ReactElement {
         ]}
         cta={
           <Button
-            variant="uv"
+            variant="primary"
             size="lg"
             block
             onClick={() =>
               openUpgrade({ triggerLabel: 'Pro membership', triggerValueUsd: 99 })
             }
           >
-            Upgrade — $99/yr
+            Start 14-day trial — $99/yr
           </Button>
         }
       />

@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 10
+## Current state — end of Session 11
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 10 of ~30.
+**Session number:** 11 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -65,19 +65,28 @@
   - `/settings` (protected) — Tabs-driven (Profile / Stack / Subscription / Danger). Profile form fakes 400 ms save → toast. Subscription "Upgrade to Pro" → openUpgrade. Danger zone opens DeleteAccountModal — Radix Dialog with email-match gate before the danger button enables.
   - Process: Cmd-K landed on the main thread (touches shared overlay code), then 3 subagents built dashboard / submit / settings in parallel (~14 min wall-clock vs ~45-60 min sequential). Subagents adapted to the real `auth()` export rather than the prompt's mistaken `getServerUser` reference.
   - Build emits 145 routes total. New routes: `/dashboard` 1.77 kB, `/settings` 3 kB, `/submit` 19 kB. Middleware unchanged at 80.8 kB. Protected routes verified to 307 → `/?signin=1` when anon.
+- ✓ Session 11 — Bookmarks persistence + /compare + /best-for + /pricing (3 parallel subagents after main-thread bookmarks).
+  - `components/bookmarks/BookmarksProvider.tsx` — React context + `vch_bookmarks` cookie (1-year SameSite=Lax). Entry shape `{id, type, name, href, addedAt}`. Anon cap = 5 per Q1.5. `useBookmarks()` API: `{items, count, limit, atCap, has, toggle, remove, clear}`. Wired into `app/providers.tsx`.
+  - 3 lists swapped local `useState<Set<string>>` for the hook: ModelsList, McpsList, GenericResourceIndex. At-cap → `toast.error` with upgrade hint.
+  - `BookmarkChip` in Header between Stack chip and auth buttons — mint pill with count when ≥1, links to /dashboard/bookmarks.
+  - `/dashboard/bookmarks` (protected) — sort row (Recent / By type / A→Z), Trash per-row, Clear all with confirm. `DashboardClient` now renders top-5 bookmarks in the "Recent bookmarks" card (replaces the EmptyState stub when count > 0).
+  - `/compare` — `?ids=type:slug,…` URL state, shareable links. `_lib/resolve.ts` walks models/MCPs/all `_configs` bundles. CompareGrid renders 11 conditional rows (rating / installs / license / input / output / blended-mint / intelligence / context / speed / tools / compatible-clients). EmptyState when no ids.
+  - `/best-for` — 12 use cases × 3 editorial picks each. Index = tinted tile grid; per-use-case page has top-3 ranked picks (60px Bebas mint numbers) + 7 stub slots + JSON-LD `ItemList` schema.
+  - `/pricing` — Free/Member/Pro three-card grid (Member is the highlighted recommended one; Pro UV-accent). 14-row × 3-col feature table. Money-back callout + 5-question FAQ accordion. CTAs fire openAuth('signup') / openUpgrade.
+  - Build emits 159 routes total. Middleware unchanged at 80.8 kB.
 - ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
   - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
   - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `d1d0f97` (`feat(deals,news,guides,types): S09/S10/S11 + 16-type closeout`) on branch `main`. Session 10's work is uncommitted on local fs at handoff.
+**Last commit:** `1ccd8e6` (`feat(bookmarks,pricing): cookie-backed bookmarks + /pricing page`) on branch `feat/bookmarks-pricing`. Session 11A pricing-polish follow-up (mint-on-Pro per spec revision, "Browse free →" → /models) committed on the same branch.
 
 **Earlier checkpoint commits on `main`:** `50a1d7d` (`fix(app): add error / global-error / not-found route boundaries`), `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`), `52e51ae` (Session 5 models), `40a64fd` (Session 4 chrome), `6aa2511` (planning docs in repo), `9202881` (Session 3 auth + providers), `df7289a` (Sessions 1-2 skeleton).
 
-**4 quality gates at end of Session 10:** typecheck ✓, lint ✓, build ✓ — **145 routes total** (141 from Session 9 + `/dashboard` + `/submit` + `/settings` + the expanded Cmd-K's runtime additions). Middleware unchanged at 80.8 kB. Curl-verified: `/` 200, `/dashboard`/`/submit`/`/settings` all return 307 → `/?signin=1` (protected-route gate works), `/news/feed.rss` 200. Cmd-K index now spans every resource type + deals + news + guides (~70 entries).
+**4 quality gates at end of Session 11:** typecheck ✓, lint ✓, build ✓ — **159 routes total** (up from 145). New routes: `/compare` 2.29 kB · `/best-for` index + 12 SSG details · `/dashboard/bookmarks` 5.46 kB · `/pricing` 1.9 kB. Middleware unchanged at 80.8 kB. Verified: `/`, `/pricing`, `/best-for`, `/best-for/saas-weekend`, `/compare?ids=…` all 200; `/dashboard/bookmarks` 307 → `/?signin=1` when anon; JSON-LD `ItemList` present on use-case pages; `/compare?ids=model:gpt-5,model:claude-opus-4-7,mcp:github-mcp` resolves all 3 mixed-type items.
 
-**Next planned:** Session 11 — `/compare` page (multi-resource side-by-side), bookmarks persistence (`/api/bookmarks` + DB), proper return-to via `lib/auth/return-to.ts`, Sentry + Pino if DSN arrives.
+**Next planned:** Session 12 — Wire real Supabase project if creds land (bookmarks DB swap + real auth round-trip), Sentry + Pino if DSN arrives, Cmd-K type-prefix filters (`>models foo`), and editorial seed bundle pickup if delivered.
 
 ---
 

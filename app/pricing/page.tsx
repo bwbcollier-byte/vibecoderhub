@@ -149,10 +149,10 @@ export default function PricingPage(): ReactElement {
                 <th className="text-center font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-text-secondary p-4">
                   Free
                 </th>
-                <th className="text-center font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-mint p-4">
+                <th className="text-center font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-text-secondary p-4">
                   Member
                 </th>
-                <th className="text-center font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-ultraviolet p-4">
+                <th className="text-center font-mono uppercase tracking-[1.5px] text-[10px] font-bold text-mint p-4 bg-mint/5">
                   Pro
                 </th>
               </tr>

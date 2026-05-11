@@ -185,6 +185,87 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 11 — Bookmarks persistence + /compare + /best-for + /pricing
+
+**Date:** 2026-05-12. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**Bookmarks persistence (main thread — shared state across the app):**
+- `components/bookmarks/BookmarksProvider.tsx` — React context. Cookie-backed (`vch_bookmarks`, 1-year SameSite=Lax). Anonymous cap = 5 (per ANSWERS Q1.5); auth flag stub returns false so the cap fires today. API: `{ items, count, limit, atCap, has(id), toggle(entry), remove(id), clear() }`. Entry shape: `id` (`${type}:${slug}`) + `type` + `name` + `href` + `addedAt`. Mount-time hydration; persist on every change.
+- Wired into `app/providers.tsx` inside the Overlays / PostHog / Cookie-banner stack.
+- `ModelsList`, `McpsList`, and `GenericResourceIndex` swapped local `useState<Set<string>>` for `useBookmarks()`. Each toggle passes the full entry. When the cap is hit, the list calls `toast.error('Bookmark limit reached…')` instead of silently no-opping. Card APIs (`bookmarked` + `onToggleBookmark`) stay unchanged.
+- `components/layout/header/BookmarkChip.tsx` — new chip between the stack chip and the auth buttons. Mint pill with count when ≥ 1; quiet "SAVED" otherwise. Links to `/dashboard/bookmarks`.
+- `app/dashboard/bookmarks/page.tsx` + `_components/BookmarksClient.tsx` — protected route. Sort row (Recent / By type / A→Z). Per-row Trash + global "Clear all" with `window.confirm`. EmptyState when count = 0.
+- `DashboardClient` "Recent bookmarks" card now renders the top 5 bookmarks when present; "All N →" link when count > 0.
+
+**Parallel subagents — three independent routes built concurrently:**
+
+*Subagent A — `/compare`:*
+- `app/compare/page.tsx` Server Component. Reads `searchParams.ids` (Promise per Next 15) — comma-separated `type:slug` ids. Truncates to 6.
+- `app/compare/_lib/resolve.ts` — pure helper. Walks models / MCPs / every `_configs` bundle. Returns unified `CompareItem` per id; skips unresolvable.
+- `app/compare/_components/CompareGrid.tsx` Client. Per-column header (provider mark + kicker + name link + Remove via `useRouter` + `useSearchParams` so the URL stays the source of truth). 11 conditional rows: rating / installs / license / input / output / blended (mint) / intelligence / context / speed / tools / compatible clients. "Add to compare" footer fires `openCmdK()`.
+- EmptyState when no ids → "Browse models" CTA.
+
+*Subagent B — `/best-for`:*
+- `lib/seed/best-for.ts` — 12 use cases × 3 editorial picks each. All slugs verified against existing seeds (models / MCPs / starters / subagents / guides). Rationales are concrete (~140 chars each); not generic boilerplate.
+- `app/best-for/page.tsx` — index. 12 tinted tile cards (mint / uv / yellow / pink).
+- `app/best-for/[slug]/page.tsx` — per-use-case detail. `generateStaticParams` for all 12 slugs + per-slug `generateMetadata`. Hero tinted by variant. Top-3 ranked picks as big Bebas-numbered cards (60px mint number, type kicker, name link, rationale, view-link). Slots 4-10 stub as "More picks coming Q3 2026". JSON-LD `ItemList` schema embedded via `dangerouslySetInnerHTML`.
+- Verified: `curl /best-for/saas-weekend | grep ld+json` returns valid Schema.org markup.
+
+*Subagent C — `/pricing`:*
+- `app/pricing/page.tsx` Server shell + `_components/PricingClient.tsx` for CTA-firing.
+- Free / Member / Pro three-card grid. Member is the highlighted recommended card (mint border + "RECOMMENDED" badge). Pro has UV accent. CTAs: Free → `/`, Member → `openAuth('signup')`, Pro → `openUpgrade({ triggerLabel: 'Pro membership', triggerValueUsd: 99 })`.
+- 14-row × 3-column feature comparison table. Cells: mint ✓ / muted "Coming Q3 2026" / `—`.
+- Money-back callout (mint border) + 5-question FAQ accordion.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green (no new warnings)
+- build: green — **159 routes total** (up from 145). New: `/compare` 2.29 kB, `/best-for` + 12 SSG details, `/dashboard/bookmarks` 5.46 kB, `/pricing` 1.9 kB.
+- preview verification: `/`, `/pricing`, `/best-for`, `/best-for/saas-weekend`, `/compare?ids=…` all 200. `/dashboard/bookmarks` correctly 307 → `/?signin=1` when anon. JSON-LD ItemList present on use-case pages. Compare resolves 3 mixed-type ids in shareable URL.
+
+### Bumps during integration
+
+- Build kept hitting filesystem race conditions on `.next/server/*.json` because a leftover dev server (and one stuck `next build` PID) held descriptors open. Pattern: kill all VCH node processes → `rm -rf .next` → rebuild clean. Documented for future sessions.
+- Subagents reported "pre-existing errors in `scripts/ingest/_shared/*`" during their own typecheck runs. After deleting `tsconfig.tsbuildinfo` the errors disappeared — `tsc --incremental` returned stale results from concurrent runs. Pattern: `rm tsconfig.tsbuildinfo` before the final typecheck when subagents have just run.
+
+### Decisions made this session
+
+- **D59 — Bookmark entries carry `{type, slug, name, href}`, not just `slug`.** /dashboard/bookmarks renders a real list (type chip + clickable name) without re-querying. ~80 bytes per entry → 50 bookmarks fits the 4 KB cookie cap.
+- **D60 — Cap enforcement is a silent toast, not a paywall modal.** A `toast.error('Bookmark limit reached…')` mentions upgrade in copy. UpgradeModal on every cap hit would feel aggressive.
+- **D61 — `/compare` is URL-state, not Client-state.** Shareable links work because the page reads `searchParams.ids`. Trade-off: client-side optimistic UI (drag-to-add) costs a round trip; acceptable because compare is a deliberate user action.
+- **D62 — `/best-for` rationales are 140-char hand-edited copy.** Editorial bundle will replace these eventually but seed text needs to read like a human picked it for the page to be SEO-credible. 12×3 = 36 hand-edited rationales were the budget.
+- **D63 — `/pricing` Member card is highlighted, not Pro.** Member is the conversion target for anon → signup. Pro gets the UV accent (eye-catching) but Member gets the "RECOMMENDED" kicker.
+  - **Revised mid-session (D63a).** Per the Session 11A bookmarks+pricing prompt: mint accent moves to Pro (matches the new "Single Pro plan with 14-day trial" framing); Member loses the RECOMMENDED kicker; Pro Card now uses `border-mint-border` + mint button + "PRO · 14-DAY FREE TRIAL" kicker; comparison-table Pro column gets a mint-tinted background. Free-card secondary CTA flipped to "Browse free →" → `/models` (was "Browse anonymously" → `/`).
+
+### Cosmetic / open items
+
+- BookmarkChip is `hide-mobile` — mobile users don't see the count. Mobile bottom nav already has a Saved tab; revisit if data shows otherwise.
+- `/compare` table is a real `<table>`; mobile horizontal-scroll works but feels janky. Future polish: collapse to card-per-item on narrow viewports.
+- JSON-LD on `/best-for/[slug]` lists only top-3 real picks; expand when slots 4-10 land.
+- Cookie banner z-index conflict with overlays — still on the list.
+
+### Deferred to Session 12
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- Real auth round-trip + DB swap for bookmarks once Supabase is provisioned.
+- `/best-for` slots 4-10 from editorial.
+- `/compare` 4-vs-6 cap split between free and Pro.
+- BookmarkChip mobile placement.
+
+### Next session
+
+1. Wire real Supabase project if creds land — bookmarks DB swap, auth round-trip end-to-end test.
+2. Sentry + Pino if DSN.
+3. Cmd-K type-prefix filters (`>models foo`, `>mcps bar`).
+4. `/best-for` filling out remaining slots once editorial provides them.
+
+Gates green at end of Session 11. No mid-step deferrals.
+
+---
+
 ## Session 10 — Cmd-K expansion + /dashboard + /submit + /settings (parallel)
 
 **Date:** 2026-05-12. **Branch:** `main`. **Commit:** _pending at session end._
