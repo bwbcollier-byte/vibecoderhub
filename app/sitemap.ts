@@ -9,6 +9,11 @@ import type { MetadataRoute } from 'next';
 
 import { listModels } from '@/lib/seed/models';
 import { listMcps } from '@/lib/seed/mcps';
+import { listDeals } from '@/lib/seed/deals';
+import { listNews } from '@/lib/seed/news';
+import { listGuides } from '@/lib/seed/guides';
+import * as Configs from '@/lib/seed/_configs';
+import type { GenericResource, GenericTypeConfig } from '@/lib/seed/generic';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -42,7 +47,63 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticPaths, ...modelDetailPaths, ...mcpDetailPaths].map((entry) => ({
+  // Walk every generic-type bundle and emit index + detail URLs.
+  const genericPaths: Array<{ url: string; changeFrequency: 'weekly'; priority: number }> = [];
+  for (const value of Object.values(Configs) as Array<{
+    items: GenericResource[];
+    config: GenericTypeConfig;
+  }>) {
+    if (!value?.config?.basePath) continue;
+    genericPaths.push({
+      url: `/${value.config.basePath}`,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+    for (const item of value.items) {
+      genericPaths.push({
+        url: `/${value.config.basePath}/${item.slug}`,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
+    }
+  }
+
+  const dealsPaths = [
+    { url: '/deals', changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...listDeals().map((d) => ({
+      url: `/deals/${d.slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
+    })),
+  ];
+
+  const newsPaths = [
+    { url: '/news', changeFrequency: 'hourly' as const, priority: 0.7 },
+    ...listNews().map((n) => ({
+      url: `/news/${n.slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+  ];
+
+  const guidePaths = [
+    { url: '/guides', changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...listGuides().map((g) => ({
+      url: `/guides/${g.slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+  ];
+
+  return [
+    ...staticPaths,
+    ...modelDetailPaths,
+    ...mcpDetailPaths,
+    ...genericPaths,
+    ...dealsPaths,
+    ...newsPaths,
+    ...guidePaths,
+  ].map((entry) => ({
     ...entry,
     url: `${SITE_URL}${entry.url}`,
     lastModified: now,

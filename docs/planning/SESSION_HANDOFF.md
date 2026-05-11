@@ -6,11 +6,11 @@
 
 ---
 
-## Current state — end of Session 8
+## Current state — end of Session 9
 
 **Session phase:** Phase C in progress.
 
-**Session number:** 8 of ~30.
+**Session number:** 9 of ~30.
 
 **Phase A:** ✓ complete (3 batches, 20 questions, 27 ANSWERS entries, ~50 ASSUMPTIONS).
 
@@ -50,19 +50,27 @@
   - Shared chassis: `lib/seed/generic.ts` (shape + sort + filter), `components/resources/{GenericResourceIndex,GenericResourceCard,DetailChassis,DetailTabs,ResourceIndexPage,CodeSnippetPreview}.tsx`. Detail chassis takes an optional `previewBlock` for Zone 5.
   - Batch S03-S08: /components (Snippet tab), /skills (Overview + Compatibility), /rules (Rule text tab), /subagents (Overview + Compatibility), /plugins (Overview + Compatibility), /prompts (Template tab). Each per-type page is ~10 lines index + ~30 lines detail; 4 seed entries per type. `lib/seed/_configs.ts` bundles configs.
   - Build emits 46 routes total. 24 new SSG detail pages added (4 per type × 6 types). Middleware 80.8 kB.
+- ✓ Session 9 — Slices S09 + S10 + S11 + 16-type closeout batch.
+  - `/deals` — 10 seed deals across 3 tiers (public / member / pro) × 4 categories. Server hero + Client `DealsList` with category + tier pill rows + sort `<select>`. `DealCard` paints Pro deals under a `backdrop-blur-md` overlay with `UpgradeModal` trigger; member deals get a sign-up CTA; public deals are claimable inline.
+  - `components/overlays/UpgradeModal.tsx` — Pro paywall modal with payback math + UV CTA. `OverlaysProvider` now exposes `openUpgrade(context)`.
+  - `/news` + `/news/[slug]` + `/news/feed.rss` + `/news/feed/[kind].rss` — 8 seed news items, 5 kind filters (Client state), focused-read article at `max-w-prose`. RSS 2.0 feeds with shared XML renderer; per-kind feeds prerendered via `generateStaticParams`.
+  - `/guides` + `/guides/[slug]` — tinted grid index, sticky-aside stepper detail. Step completion persists to `vch_guide_completed:<slug>` in localStorage.
+  - 16-type batch closeout — every remaining `resource_type` enum (tools, hooks, commands, starters, workflows, evals, showcase, sandboxes, observability, backends, assets, docs-for-llms, specs, stacks, scripts, marketplaces) now has a working index + detail. 3 seed entries each. Page wrappers stamped via `/tmp/stamp_pages.sh`.
+  - `app/sitemap.ts` walks every bundle reflectively + lists deals/news/guides. New types pick up SEO for free.
+  - Build emits 141 routes total. Middleware unchanged at 80.8 kB.
 - ✓ Session 6 — Design polish. Root cause: Tailwind v4 wasn't reading `tailwind.config.ts` (v4 needs `@theme` in CSS), and our reset rules sat in unlayered CSS which beat the utility layer in the cascade. Two CSS edits unblocked the entire palette: added `@theme { --color-* / --font-* / --radius-* / --height-* / --container-* / … }` block + wrapped reset/base in `@layer base { … }`. Net effect: every page that already had correct structure suddenly rendered with the full Promptkit palette (mint kicker, mint hero highlight, mint stats in 38px Bebas Neue, mint/uv/yellow pillar tiles, mint button pills, mint nav-active underline, 1280px containers instead of 320px).
   - Also: `ModelCard` gained `tone={'dark' | 'mint' | 'uv'}` + `ribbon` props. `ModelsList` paints position 0 as the mint "★ EDITOR'S PICK" card, position 4 as ultraviolet; rest stay dark. Matches Promptkit's accent-rhythm pattern.
   - Verified at 1440×900 and 375×812 — both render Promptkit-faithful.
 
 **Project location:** `~/Documents/VibeCoderHub/vibecoderhub-web` (moved out of Claude Desktop sandbox Session 2 → 3 handoff). Planning docs at `~/Documents/VibeCoderHub/`.
 
-**Last commit:** `9fcd3c3` (`feat(overlays,mcps): foundation overlays + slice S02`) on branch `main`. Session 8's work is uncommitted on local fs at handoff.
+**Last commit:** `f0610dd` (`feat(seo,resources): sitemap+robots+OG, shared chassis, S03-S08 batch`) on branch `main`. Session 9's work is uncommitted on local fs at handoff.
 
 **Earlier checkpoint commits on `main`:** `50a1d7d` (`fix(app): add error / global-error / not-found route boundaries`), `e1e9926` (`fix(theme): tailwind v4 @theme + @layer base — unblocks entire palette`), `52e51ae` (Session 5 models), `40a64fd` (Session 4 chrome), `6aa2511` (planning docs in repo), `9202881` (Session 3 auth + providers), `df7289a` (Sessions 1-2 skeleton).
 
-**4 quality gates at end of Session 8:** typecheck ✓, lint ✓, build ✓ — 46 routes total (8 type indexes + 40 prerendered SSG detail pages + sitemap + robots + 18 OG image variants + `/api/health` + statics). Shared chassis keeps per-index size at ~137 B and per-detail at ~1.71 kB. Middleware 80.8 kB. Curl-verified: `/components`, `/skills`, `/rules`, `/subagents`, `/plugins`, `/prompts`, `/sitemap.xml`, `/robots.txt`, `/api/health` all return 200 with valid bodies.
+**4 quality gates at end of Session 9:** typecheck ✓, lint ✓, build ✓ — **141 routes total**. 24 resource-type indexes + ~70 prerendered SSG details + /deals + /news (index + 8 articles + site-wide RSS + 6 per-kind RSS) + /guides (index + 4 stepper details) + sitemap + robots + 18 OG image variants + `/api/health` + statics. Middleware unchanged at 80.8 kB. Curl-verified after a fresh dev restart: `/deals`, `/news`, `/news/opus-47-price-cut`, `/news/feed.rss`, `/news/feed/releases.rss`, `/guides`, `/guides/install-qwen-mac`, `/tools`, `/marketplaces/smithery`, `/sitemap.xml` all return 200; RSS body is well-formed XML.
 
-**Next planned:** Session 9 — Slice S09 `/tools` index + detail, `/deals` index with the Pro paywall blur pattern, and Cmd-K expansion to index all 8 resource types from `lib/seed/_configs.ts`.
+**Next planned:** Session 10 — Cmd-K expansion across all 24 resource types from `_configs`, `/dashboard` for logged-in users (bookmarks / saved stacks / alerts), `/submit` flow (paste GitHub URL → auto-detect type → preview → submit), and Sentry + Pino if DSN arrives.
 
 ---
 

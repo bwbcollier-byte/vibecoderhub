@@ -21,11 +21,13 @@ import {
 import { CmdK } from './CmdK';
 import { AuthModal, type AuthMode } from './AuthModal';
 import { StackPicker } from './StackPicker';
+import { UpgradeModal, type UpgradeContext } from './UpgradeModal';
 
 interface OverlaysContextValue {
   openCmdK: () => void;
   openAuth: (mode?: AuthMode) => void;
   openStackPicker: () => void;
+  openUpgrade: (context: UpgradeContext) => void;
 }
 
 const OverlaysContext = createContext<OverlaysContextValue | null>(null);
@@ -34,10 +36,12 @@ export function OverlaysProvider({ children }: { children: ReactNode }): ReactNo
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [upgradeContext, setUpgradeContext] = useState<UpgradeContext | null>(null);
 
   const openCmdK = useCallback(() => setCmdkOpen(true), []);
   const openAuth = useCallback((mode: AuthMode = 'signin') => setAuthMode(mode), []);
   const openStackPicker = useCallback(() => setPickerOpen(true), []);
+  const openUpgrade = useCallback((ctx: UpgradeContext) => setUpgradeContext(ctx), []);
 
   // Global ⌘K / Ctrl+K — opens (or closes) the palette from anywhere.
   useEffect(() => {
@@ -52,8 +56,8 @@ export function OverlaysProvider({ children }: { children: ReactNode }): ReactNo
   }, []);
 
   const value = useMemo<OverlaysContextValue>(
-    () => ({ openCmdK, openAuth, openStackPicker }),
-    [openCmdK, openAuth, openStackPicker],
+    () => ({ openCmdK, openAuth, openStackPicker, openUpgrade }),
+    [openCmdK, openAuth, openStackPicker, openUpgrade],
   );
 
   return (
@@ -76,6 +80,12 @@ export function OverlaysProvider({ children }: { children: ReactNode }): ReactNo
         />
       )}
       {pickerOpen && <StackPicker onClose={() => setPickerOpen(false)} />}
+      {upgradeContext && (
+        <UpgradeModal
+          context={upgradeContext}
+          onClose={() => setUpgradeContext(null)}
+        />
+      )}
     </OverlaysContext.Provider>
   );
 }

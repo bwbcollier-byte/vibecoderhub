@@ -185,6 +185,94 @@ Gates green at end of Session 3. No mid-step deferrals.
 
 ---
 
+## Session 9 — Slices S09 / S10 / S11 + 16-type batch closeout
+
+**Date:** 2026-05-12. **Branch:** `main`. **Commit:** _pending at session end._
+
+### What landed
+
+**Slice S09 — `/deals` (Pro paywall showcase):**
+- `lib/seed/deals.ts` — 10 deals across 3 tiers (`public` / `member` / `pro`) and 4 categories (AI APIs / Cloud / Dev tools / Productivity). Hex tints reference `lib/tokens.ts` `colors.tile*` — no raw hex outside tokens.
+- `app/deals/page.tsx` — Server Component. Hero kicker, brutalist `$total in credits` headline, `DealsList` handoff.
+- `app/deals/_components/DealsList.tsx` — Client. Category pill row (mint), tier pill row (ultraviolet), `<select>` sort (most-valuable / most-claimed / expiring-soon). Reads `useSession()` to drive the paywall.
+- `app/deals/_components/DealCard.tsx` — Pro deals render their content under a `backdrop-blur-md bg-canvas/70` overlay with an Icon.Lock + payback-math copy + UV "Upgrade — $99/yr" button that opens `UpgradeModal` via `useOverlays().openUpgrade(...)`. Member deals show a mint "Sign up free" overlay. Public deals show the "Claim ▸" CTA inline.
+- `components/overlays/UpgradeModal.tsx` — Radix Dialog. Anchors on the specific deal that triggered the prompt ("This single deal pays for Pro Nx over"), lists Pro perks with mint checkmarks, UV upgrade CTA.
+- `OverlaysProvider` extended with `openUpgrade(context)` + state slot; UpgradeModal renders when `upgradeContext != null`.
+
+**Slice S10 — `/news` (index + article + RSS):**
+- `lib/seed/news.ts` — 8 news items across 5 kinds (breaking / releases / ecosystem / tutorials / op-eds), with `auto` flag for the eventual editorial-queue 🤖 badge.
+- `app/news/page.tsx` — kicker + brutalist `What's new.` headline + RSS button + Subscribe CTA.
+- `app/news/_components/NewsList.tsx` — left aside with kind-filter checkboxes (counts per kind), top breaking card as a tinted hero, list of `list-link`-style article rows with provider tile thumbnails.
+- `app/news/[slug]/page.tsx` — focused-read article. Uses `max-w-prose` (720 px). Hero kicker (breaking turns pink), Bebas display headline, tinted hero strip, lead paragraph in `text-[22px]`, body in `font-sans text-[18px] leading-[1.7]`, related-topics card at the bottom.
+- `app/news/feed.rss/route.ts` — site-wide RSS 2.0 feed; `revalidate = 600`. Shares `_render.ts`.
+- `app/news/feed/[kind]/route.ts` — per-kind RSS (`/news/feed/releases.rss`, etc.). `generateStaticParams` emits one route per kind.
+- `app/news/feed.rss/_render.ts` — small XML-escaping RSS 2.0 generator; same shape both feeds use.
+
+**Slice S11 — `/guides` (index + stepper detail):**
+- `lib/seed/guides.ts` — 4 guides each with a typed `steps[]` array (title, body, optional `verifyCommand` + `verifyExpect`).
+- `app/guides/page.tsx` — grid of tinted (mint/uv/yellow/pink) tile cards per Promptkit reference.
+- `app/guides/[slug]/page.tsx` — kicker, brutalist title, description, handoff to client stepper.
+- `app/guides/[slug]/_components/GuideStepper.tsx` — sticky left aside (progress bar + clickable step list with completion checkmarks), right article column (step title in mint Bebas, body, optional UV-bordered "VERIFY" callout). Completion persisted to localStorage (`vch_guide_completed:<slug>`).
+
+**16-type batch closeout — every remaining `resource_type` enum now has a working `/[type]` index + `/[type]/[slug]` detail:**
+- `lib/seed/_remaining.ts` — single seed file with 16 export arrays (3 entries each, ~50 records): TOOLS / HOOKS / COMMANDS / STARTERS / WORKFLOWS / EVALS / SHOWCASE / SANDBOXES / OBSERVABILITY / BACKENDS / ASSETS / DOCS_FOR_LLMS / SPECS / STACKS / SCRIPTS / MARKETPLACES.
+- `lib/seed/_configs.ts` extended with 16 new bundles.
+- 32 thin page files stamped via a bash script (`/tmp/stamp_pages.sh`): one index + one detail per type, each ~10–30 lines, all consuming the shared `ResourceIndexPage` + `DetailChassis` from Session 8.
+
+**Sitemap extension:**
+- `app/sitemap.ts` now walks `lib/seed/_configs` exports + lists deals / news / guides. Sitemap pulls every detail slug from every bundle automatically.
+
+### Per-slice ritual
+
+- typecheck: green
+- lint: green
+- build: green — **141 routes total**. Includes:
+  - 24 resource-type indexes
+  - ~70 prerendered SSG details (8 models + 8 mcps + 4×6 generic + 3×16 batch + 4 guides + 8 news)
+  - `/deals` (dynamic Client)
+  - `/news/feed.rss` + 6 per-kind RSS routes (`/news/feed/{breaking,releases,ecosystem,tutorials,op-eds,price}.rss`)
+  - sitemap + robots + opengraph variants + `/api/health` + statics
+- Middleware unchanged at 80.8 kB.
+- Curl-verified live: `/deals`, `/news`, `/news/opus-47-price-cut`, `/news/feed.rss`, `/news/feed/releases.rss`, `/guides`, `/guides/install-qwen-mac`, `/tools`, `/marketplaces/smithery`, `/sitemap.xml` all return 200. RSS body is well-formed XML.
+
+### Decisions made this session
+
+- **D46 — Pro paywall is a CSS `backdrop-blur` over the rendered card, not a separate `<LockedCard>` component.** Same DOM ships to all viewers; the overlay covers it. Means search engines can still index the deal title + summary (the blur is visual only), Cmd-K can autocomplete on the name, and the "fade out into upgrade prompt" UX matches Promptkit exactly. Cost: a tiny non-functional info leak (someone can `display:none` the overlay in devtools and read the body) — acceptable Phase 1; tightens later by gating server-rendered description text.
+- **D47 — `useSession()` is called from the Client `DealsList`, not threaded as a prop.** `isPro` will read from `profile.pro` once Slice S20 (Pro upgrade) ships; for now dummy to `false` so the paywall actually fires. Server Component `app/deals/page.tsx` stays pure (no Supabase RSC client in the hot path).
+- **D48 — `UpgradeModal` carries a `context` (label + dollar value) so the headline reads "this single deal pays for Pro Nx over."** Specific math beats a generic Pro pitch. The same modal opens from the gateway placeholder (slice 17) + the API-keys page (slice 18) with different contexts — pattern scales.
+- **D49 — News-kind filter is client state, not a URL query param.** Phase 1 trade-off — the filter feels native + transitions instantly. When the news catalogue grows past ~100 items, server-side filtering with `?kind=releases` lands at the same path; same handler, different data source.
+- **D50 — RSS shares one renderer across site-wide + per-kind.** `app/news/feed.rss/_render.ts` is the single XML generator. Both routes import it. New kinds get a feed for free via `generateStaticParams` on the catch-all.
+- **D51 — Guide step completion uses localStorage keyed per-slug.** Same pattern as Cmd-K recents (D36). When auth + DB land, this migrates to `user_guide_progress`; the API shape (Set<number>) carries through unchanged.
+- **D52 — All 16 batch types stamped via a bash script, not editor-pasted.** `/tmp/stamp_pages.sh` is the canonical generator. If the chassis grows a third tab (Overview / Compatibility / X), regenerate. Cheaper than chasing 32 hand-edited files.
+- **D53 — Sitemap walks `Object.values(Configs)` reflectively.** Adding a new resource type means dropping a bundle into `_configs.ts` — the sitemap picks it up without an edit. New types still need their own page wrappers, but the SEO surface is free.
+
+### Cosmetic / open items
+
+- Mobile sticky stepper aside collapses below the article on `<lg` breakpoints — acceptable but the progress bar could float as a sticky banner above the article instead. Add when mobile design pass happens.
+- `/deals/[slug]` detail page doesn't exist yet — deal cards link back to the index, not to per-deal detail. Promptkit's reference doesn't have one either; revisit if the editorial team wants long-form per-deal pages.
+- RSS pubDate is now-stamped for every item because seed has no timestamp. Add a real `ISO timestamp` field to `lib/seed/news.ts` once the editorial bundle drops.
+
+### Deferred to Session 10
+
+- Boot Step 5 (Sentry + Pino) — still no DSN.
+- `/deals/[slug]` detail pages.
+- Cmd-K expansion across all 24 types (still Models-only).
+- Bookmarks persistence — all index pages still use in-memory `Set<slug>`.
+- News kind URL state (`/news?kind=releases`).
+- Real Sandpack live playground for /components.
+- Real OAuth round-trip once Supabase project lands.
+
+### Next session
+
+1. Cmd-K expansion across all 24 resource types from `_configs`.
+2. `/dashboard` for logged-in users (bookmarks, saved stacks, alerts).
+3. `/submit` flow (paste GitHub URL → auto-detect type → preview → submit).
+4. Sentry + Pino if DSN arrives.
+
+Gates green at end of Session 9. No mid-step deferrals.
+
+---
+
 ## Session 8 — SEO infra + shared chassis + 6-type batch (S03-S08)
 
 **Date:** 2026-05-11. **Branch:** `main`. **Commit:** _pending at session end._
