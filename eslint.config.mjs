@@ -117,8 +117,10 @@ export default [
   // ── Token source files: hex literals ARE the source of truth here ────
   // lib/tokens.ts and tailwind.config.ts define the canonical hex values
   // referenced everywhere else; the no-hex rule must not fire on them.
+  // app/global-error.tsx must work even if Tailwind / the root layout is
+  // broken, so it uses inline-style hex literals as a deliberate last resort.
   {
-    files: ['lib/tokens.ts', 'tailwind.config.ts'],
+    files: ['lib/tokens.ts', 'tailwind.config.ts', 'app/global-error.tsx'],
     rules: {
       'no-restricted-syntax': 'off',
     },
