@@ -6,6 +6,47 @@
 
 ---
 
+## Current state — end of Session 17 — **VISUAL ENRICHMENT + 8 MORE INGESTION SOURCES LIVE**
+
+**Session phase:** Multi-step session. Started by repairing 7 broken ingestion scripts (across two follow-up rounds in Session 16's timeframe), then a full visual-enrichment pass on the rendered cards.
+
+**Live inventory at session end** (deployed Supabase):
+- pk_resources (published): **2,604 total** — mcp 1,029, model 365, component 247, rule 207, subagent 207, tool 165, plugin 146, command 110, skill 78, hook 50
+- pk_news: **168 rows** (118 HN + 50 arXiv)
+
+**Session 17 summary**
+
+### Ingestion repairs (lead-in to visual session)
+
+- ✓ **github-code-search** — `pushed:>YYYY-MM-DD` is not a valid qualifier on `/search/code` (only on `/search/repositories`); also `repository.stargazers_count` is not in code-search responses, so `if (stars < 5) continue` dropped 100% of hits. Removed the bogus filter; resolved stars via per-repo `/repos/{owner}/{repo}` lookup with a `Map` cache. Result: **538 inserted, 1 transient ECONNRESET fail**.
+- ✓ **github-stargazer-velocity** — already worked: **231 inserted, 30 updated** (300 discovered, 261 above the 25-star floor).
+- ✓ **cursor-directory** — cursor.directory is Vercel-bot-blocked (HTTP 429 even on `sitemap.xml`, regardless of UA). Switched data source to the open mirror at `github.com/Qwertic/cursorrules` — 101 `.cursorrules` directories with body + README. Pretty-name derivation strips the `-cursorrules-prompt-file` suffix. Result: **101 inserted**.
+- ✓ **21st** — sitemap reorganised: components moved from `/r/{user}/{slug}` to `/community/components/{user}/{slug}`. The old regex matched 0 of 7,505 sitemap URLs. Updated regex; the `/r/{user}/{slug}` JSON registry endpoint still works for fetches. Filtered overview routes (popular/newest/featured/etc.) and de-duped (same component appears under multiple list pages). Result: **200 inserted** (capped per-run; 4,534 unique components discovered, 4,334 still pending — bump cap or run multiple passes).
+- ✓ **smithery** — `SMITHERY_API_KEY` no longer required; `registry.smithery.ai/servers` is publicly readable. Auth honoured if set. **Public endpoint caps unauthenticated reads at 5 pages × 100 servers** (advertised `totalCount: 5,331` but `pagination.totalPages: 5`; pages 6+ return empty arrays). The 500 we fetch is the public ceiling — lifting requires the paid key. Result: **279 inserted, 221 updated** (overlap with the official MCP registry slugs).
+- ✓ Promotions + backfills landed for all of the above (1,349 drafts → published; 334 new `pk_mcps` rows backfilled).
+
+### Visual enrichment
+
+- ✓ **Provider logos.** 15 monochrome 24×24 SVGs at `public/logos/providers/` — openai/anthropic/google/meta/mistral/cohere/deepseek/microsoft/nvidia/amazon/alibaba/xai/together/perplexity/inflection. New `<ProviderLogo>` component at `components/icons/ProviderLogos/ProviderLogo.tsx` with a defensive alias map (lowercase + strip non-alnum collapses "Open AI"/"open-ai"/"OPENAI"/"GPT"/"ChatGPT" → openai; "Claude" → anthropic; "Gemini"/"Google AI"/"DeepMind" → google; "Llama"/"Meta AI"/"Facebook" → meta; "Qwen"/"Alibaba Cloud" → alibaba; "Grok"/"X.ai" → xai; "Phi"/"MSFT" → microsoft; "Bedrock"/"AWS" → amazon; etc.). Falls back to a coloured initials tile when no slug match. Wired into `ModelCard` (replaces the inline initials box). Also into the home page's top-models teaser at `size={20}`.
+- ✓ **Type icons on cards.** New `lib/resource-type-icons.ts` maps each `ResourceTypeId` to an existing `Icon.X` component (mcp→Package, model→Brain, skill→Zap, subagent→User, rule→Lock, plugin→Plus, hook→Bell, command→Command, starter→Rocket, workflow→Refresh, eval→Check, prompt/spec/docs_for_llms→Edit, marketplace→Coins, sandbox→Package, observability→Eye, backend/asset/stack/component→Layers, showcase→Star, tool→Wrench, script→Play). Wired into `GenericResourceCard` kicker (replaces the unicode `glyph` for the per-type symbol while keeping the rest of the kicker line). ModelCard / McpCard untouched — they have their own bespoke kickers.
+- ✓ **OG meta-spam fix.** Both `/models/[slug]/opengraph-image.tsx` and `/mcps/[slug]/opengraph-image.tsx` exported `generateImageMetadata` returning the full slug list. With dynamic `[slug]` segments that emitted **one og:image meta tag per known slug on every page** (365 model pages × 365 OG slugs = 133K image generations + meta-tag spam in HTML). Removed the export; now exactly one og:image per page, keyed off its own params. Verified: 200 + 52 KB PNG render.
+- ✓ **Favicon + apple touch.** `app/icon.tsx` (32×32) + `app/apple-icon.tsx` (180×180) — mint "V" on dark canvas via `ImageResponse` from canonical palette hexes. Added to the eslint hex-literal carve-out (same exception OG images use, since both render via Edge ImageResponse without our CSS cascade). Auto-discovered by Next 15; no `app/layout.tsx` edits needed.
+- ✓ **Home page real-data finish.** New `getResourceCountsByType()` in `lib/db/queries/stats.ts` returns `{[typeId]: publishedCount}`. The category grid now renders the live count next to each type label (right-aligned, mono, muted) — visible on home: 256/247/207/146/110/78/50 etc. Top-models teaser cards adopted `<ProviderLogo>`, format `$0.00` → `Free`, hide null intelligence/speed/context cleanly via `[…].filter(Boolean).join(' · ')`, and fall back to "specs pending" when none of the spec fields are populated.
+
+### Quality gates
+
+`pnpm typecheck` ✓ · `pnpm lint` ✓ · `pnpm build` ✓.
+
+### Outstanding follow-ups
+
+- **21st pagination cap.** 4,334 unique components still unprocessed — bump `MAX` from 200 or run multiple passes.
+- **Smithery 500-server ceiling.** Hard cap without a paid API key; the 4,800+ unindexed servers stay out of reach.
+- **arXiv rate-limit cron.** Production scheduler must serialise high-volume sources or add jitter — parallel runs trip 429.
+- **Model intelligence_index / TTFT / tokens-per-sec** still null for all OpenRouter rows. Need an Artificial Analysis (or similar) ingest before those fields become meaningful again. Polish handles the empty state ("specs pending", "speed —").
+- **MCP names** like `ai.buyersense/buyersense` still ship as the canonical id format. A prettifier (capitalise after last slash, drop reverse-DNS prefixes) would help.
+
+---
+
 ## Current state — end of Session 16 — **INGESTION REPAIRED + REAL-DATA POLISH SHIPPED**
 
 **Session phase:** Ingestion script repair + visual polish on real-data pages. All pages now render real DB data without "0.0", "—", or hardcoded numbers.
