@@ -24,46 +24,71 @@ async function main() {
   { sourceSlug: '21st-dev', priority: 'normal' },
   async (ctx) => {
     const sitemap = await fetchText('https://21st.dev/sitemap.xml', {
-      headers: { 'user-agent': 'vibecoderhub-ingest/1' },
+      headers: { 'user-agent': 'Mozilla/5.0 (compatible; vibecoderhub-ingest/1)' },
     });
 
-    // Match /r/{user}/{slug} registry URLs in the sitemap.
-    const urls = Array.from(
-      sitemap.matchAll(/<loc>(https:\/\/21st\.dev\/r\/[^<]+)<\/loc>/g),
+    // Sitemap pattern was reorganised — components now live under
+    // /community/components/{user}/{slug}, not /r/{user}/{slug} as before.
+    // The /r/{user}/{slug} JSON registry endpoint still works for fetches.
+    const componentPaths = Array.from(
+      sitemap.matchAll(
+        /<loc>https:\/\/21st\.dev\/community\/components\/([^/<]+)\/([^/<]+?)<\/loc>/g,
+      ),
     )
-      .map((m) => m[1])
-      .filter((u): u is string => typeof u === 'string');
+      .map((m) => ({ user: m[1]!, slug: m[2]! }))
+      // Drop overview routes like /community/components/popular.
+      .filter(
+        (p) =>
+          !['popular', 'newest', 'featured', 'week', 'search', 'pro', 'all'].includes(p.user),
+      );
 
-    // Cap per run to keep workflow well under timeout. Full re-crawl happens
-    // weekly via the same script; daily runs hit the most recent slice.
+    // De-dupe — the same component appears under multiple list filters.
+    const seen = new Set<string>();
+    const unique = componentPaths.filter((p) => {
+      const k = `${p.user}/${p.slug}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
     const MAX = 200;
-    const targets = urls.slice(0, MAX);
-    ctx.metadata.discovered = urls.length;
+    const targets = unique.slice(0, MAX);
+    ctx.metadata.discovered = unique.length;
     ctx.metadata.attempted = targets.length;
+    ctx.logger.info('21st sitemap parsed', {
+      sitemapBytes: sitemap.length,
+      uniqueComponents: unique.length,
+      attempting: targets.length,
+    });
 
     const collected: ComponentEntry[] = [];
-    for (const url of targets) {
+    for (const { user, slug: rawSlug } of targets) {
+      const registryUrl = `https://21st.dev/r/${user}/${rawSlug}`;
+      const detailUrl = `https://21st.dev/community/components/${user}/${rawSlug}`;
       await limiter.acquire();
       try {
-        const entry = await fetchJson<ComponentEntry>(url, {
-          headers: { 'user-agent': 'vibecoderhub-ingest/1' },
+        const entry = await fetchJson<ComponentEntry>(registryUrl, {
+          headers: { 'user-agent': 'Mozilla/5.0 (compatible; vibecoderhub-ingest/1)' },
         });
-        const parts = url.replace('https://21st.dev/r/', '').split('/');
-        const username = entry.username ?? parts[0];
-        const slug = slugify(`${username}-${entry.name ?? parts[1]}`);
+        const username = entry.username ?? user;
+        const slug = slugify(`${username}-${entry.name ?? rawSlug}`);
         collected.push(entry);
         await upsertResource(ctx, {
           typeSlug: 'component',
           slug,
-          name: entry.name ?? slug,
+          name: entry.name ?? rawSlug,
           description: entry.description ?? null,
-          sourceUrl: url,
+          sourceUrl: detailUrl,
+          homepageUrl: registryUrl,
           authorHandle: username,
           stackTags: ['shadcn', 'react'],
         }).catch(() => undefined);
       } catch (err) {
         ctx.counters.failed += 1;
-        ctx.logger.warn('21st fetch failed', { url, err: String(err).slice(0, 200) });
+        ctx.logger.warn('21st fetch failed', {
+          url: registryUrl,
+          err: String(err).slice(0, 200),
+        });
       }
     }
 
