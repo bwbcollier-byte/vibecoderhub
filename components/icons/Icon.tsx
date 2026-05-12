@@ -98,6 +98,11 @@ export const Icon = {
   Sliders:   make('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4'),
   Rss:       make('M4 11a9 9 0 019 9M4 4a16 16 0 0116 16M5 19a1 1 0 100-2 1 1 0 000 2z'),
   Github:    make('M9 19c-5 1.5-5-2.5-7-3m14 6v-3.5a3 3 0 00-.9-2.1c3-.3 6.1-1.5 6.1-6.5A5 5 0 0019.9 6 4.6 4.6 0 0019.7 2S18.5 1.6 16 3.4a13.4 13.4 0 00-7 0C6.5 1.6 5.3 2 5.3 2A4.6 4.6 0 005.1 6 5 5 0 003.7 9.4c0 4.9 3 6.1 6 6.5a3 3 0 00-.9 2.1V22'),
+  // Stylised mono Google "G": circle with the signature horizontal bar on the
+  // right-hand side. Single-path so it picks up `currentColor` like the rest of
+  // the icon set; the four-colour brand mark needs separate fills and isn't a
+  // fit for the make() helper.
+  Google:    make('M21 12a9 9 0 11-3.5-7.1 M21 12h-8 M21 12v0'),
   Rocket:    make('M5 19c-3 1-3 1-3 1l1-3c4-9 9-9 9-9s0 5-9 9zM12 15l-3-3M21 3s-2 .5-3.5 2-2 4-2 4-1 .5-1 2 2 1 3 0 4-2 4-2 2.5-.5 4-2 2-3.5 2-3.5z'),
   History:   make('M3 12a9 9 0 109-9 9.7 9.7 0 00-6.74 2.74L3 8M3 3v5h5M12 7v5l4 2'),
   Link:      make('M10 13a5 5 0 007 0l4-4a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-4 4a5 5 0 007 7l1-1'),

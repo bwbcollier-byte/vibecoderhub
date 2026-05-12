@@ -32,6 +32,7 @@ export const colors = {
 
   // Surfaces
   canvas:         '#131313', // Canvas Black — default page background
+  canvasDeep:     '#0a0a0a', // Banded section / footer / kbd-chip bg
   surface:        '#2d2d2d', // Surface Slate — secondary card bg
   imageFrame:     '#313131', // Image Frame — 1px border on photography
 
@@ -39,10 +40,12 @@ export const colors = {
   white:          '#ffffff',
   black:          '#000000',
   textPrimary:    '#ffffff',
+  textBody:       '#cfcfcf', // body copy on dark — between textSecondary + textMuted
   textSecondary:  '#949494', // bylines, timestamps
   textMuted:      '#e9e9e9', // button text on dark slate
   textInverted:   '#131313', // on accent tiles
   dim:            '#8c8c8c', // active/pressed button bg
+  uvLabel:        '#b69dff', // Ultraviolet-tinted label (Pro chips, promo kicker)
 
   // Story tile accent fills (used by ResourceCard variants)
   tileMint:       '#3cffd0',

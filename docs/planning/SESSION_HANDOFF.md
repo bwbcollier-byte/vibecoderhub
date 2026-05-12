@@ -6,6 +6,63 @@
 
 ---
 
+## Current state — end of Session 18 — **GOOGLE OAUTH UI + 3 LOAD-BEARING TOKENS PROMOTED**
+
+**Session phase:** Auth-UI build-out + a token-system extension that codifies three colours that were already widely used in inline literals across the codebase. Design polish was scoped down (see "Deferred" below).
+
+**Live inventory unchanged from Session 17:** 2,604 published resources, 168 news rows.
+
+**Session 18 summary**
+
+### Task 1 — design polish (partial)
+
+The original brief was a full Promptkit pixel-by-pixel walk across every page. The spawned design-polish subagent ran into a corrupted `.next` turbopack cache, couldn't complete a live audit, and (correctly) declined to do speculative rewrites. Its static-analysis pass surfaced **three load-bearing colours used in inline literals across ~38 sites** that should have been tokens:
+
+- `#cfcfcf` — body text on the dark canvas (sat between `text-secondary #949494` and `text-muted #e9e9e9`). 22+ sites: home, deals, models/[slug], mcps/[slug], guides, news, footer, header, MegaMenu, UpgradeModal, DetailChassis, DetailTabs, GenericResourceCard.
+- `#b69dff` — Ultraviolet-tinted label (Pro chips, promo kicker). 10+ sites: DealCard, McpCard, StackPicker, UpgradeModal, CmdK, GenericResourceCard, GenericResourceIndex, McpsList, DealsList, GuideStepper.
+- `#0a0a0a` — banded section bg (deeper than `canvas #131313`). 6 sites: footer, code-snippet bg, header dropdown, kbd chips.
+
+Promoted all three to first-class tokens to close the loop:
+
+- `lib/tokens.ts` — added `canvasDeep`, `textBody`, `uvLabel` with comments tracing the rationale.
+- `tailwind.config.ts` — exposed as `bg-canvas-deep`, `text-body`, `text-uv-label`.
+- `app/globals.css` — added the matching `--color-*` variables inside `@theme` so Tailwind v4 generates the utilities.
+
+These additions are **visually inert** — every existing site that uses the literal hex still renders identically. The tokens are now available so future card/section work can reach for them by name. Refactoring the existing inline literals to the new utilities is a follow-up sweep (a `replace_all` on each hex with the matching utility is mechanical).
+
+### Task 2 — Google OAuth alongside GitHub
+
+- **`components/icons/Icon.tsx`** — new `Icon.Google` entry. Uses the existing `make()` helper with a single-path stylised mono "G" (circular arc opening on the right + the signature horizontal bar). The official 4-colour brand mark wasn't viable for the single-path `currentColor` pattern; mono G reads as Google at button size and stays consistent with the rest of the icon set.
+- **`components/overlays/AuthModal.tsx`** —
+  - Extended the `submitting` union to `null | 'google' | 'github' | 'magic'`. Both OAuth buttons + the magic form disable while any flow is in flight.
+  - New `signInGoogle()` mirrors `signInGithub()` exactly — `provider: 'google'`, same `redirectTo: ${origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}` so return-to works for both.
+  - Google button rendered above GitHub (more common consumer choice); both use `<Button variant="secondary" block />` with the matching brand icon at `size={14}`.
+  - Subtle mono-caps "or" divider between the two OAuth buttons; the existing "OR WITH EMAIL" separator below stays unchanged.
+- **`app/auth/callback/route.ts`** — already calls `ensureProfile()` after successful code exchange (Session 15). Provider-agnostic: works for both GitHub and Google. No edit needed.
+
+### External OAuth setup (must be done in dashboards, not from code)
+
+Wrote `docs/setup/OAUTH_PROVIDERS.md` with step-by-step instructions for both providers:
+
+1. github.com → Settings → Developer settings → OAuth Apps → New OAuth App. Callback URL: `https://oerfmtjpwrefxuitsphl.supabase.co/auth/v1/callback`. Then Supabase Studio → Authentication → Providers → GitHub → paste Client ID/Secret.
+2. console.cloud.google.com → APIs & Services → Credentials → Create OAuth Client ID (Web). Same callback URL. Then Supabase Studio → Authentication → Providers → Google → paste credentials.
+
+End-to-end auth testing requires those dashboard steps to land first; can't be done from code alone.
+
+### Quality gates
+
+`pnpm typecheck` ✓ · `pnpm lint` ✓ · `pnpm build` ✓.
+
+### Deferred
+
+- **Pixel-by-pixel Promptkit polish across all pages.** The 6-pass review in Session 14 already verified 0 P0/P1 visual deviations on the seed-data baseline; Session 16 cleaned up real-data empty states; Session 17 added logos + icons + favicon. The remaining Promptkit-vs-current deltas (if any) need a fresh live audit on a clean dev cache. Schedule this for a focused Session 19.
+- **Inline-hex → token refactor.** With `canvasDeep`/`textBody`/`uvLabel` now declared, the ~38 sites using those literals should be swept to the new utilities. Mechanical replace-all per hex.
+- **End-to-end OAuth verification.** Blocked on the user completing the GitHub + Google dashboard setup per `docs/setup/OAUTH_PROVIDERS.md`.
+- **OAuth UX polish.** Loading state currently disables the button via the `loading={...}` Button prop. A dedicated full-screen "Redirecting to Google…" overlay during the round-trip would feel nicer.
+- **Magic link production-ready.** The `signInWithOtp` button currently calls successfully but no email sends until Resend is domain-verified + `RESEND_API_KEY` is set.
+
+---
+
 ## Current state — end of Session 17 — **VISUAL ENRICHMENT + 8 MORE INGESTION SOURCES LIVE**
 
 **Session phase:** Multi-step session. Started by repairing 7 broken ingestion scripts (across two follow-up rounds in Session 16's timeframe), then a full visual-enrichment pass on the rendered cards.

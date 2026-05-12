@@ -31,12 +31,15 @@
   --color-focus:           #1eaedb;
   --color-purple-rule:     #3d00bf;
   --color-canvas:          #131313;
+  --color-canvas-deep:     #0a0a0a;
   --color-surface:         #2d2d2d;
   --color-image-frame:     #313131;
   --color-text-primary:    #ffffff;
+  --color-text-body:       #cfcfcf;
   --color-text-secondary:  #949494;
   --color-text-muted:      #e9e9e9;
   --color-text-inverted:   #131313;
+  --color-uv-label:        #b69dff;
   --color-dim:             #8c8c8c;
   --color-tile-mint:       #3cffd0;
   --color-tile-purple:     #5200ff;

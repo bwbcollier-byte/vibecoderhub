@@ -31,9 +31,31 @@ interface AuthModalProps {
 
 export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): React.ReactElement {
   const [email, setEmail] = React.useState('');
-  const [submitting, setSubmitting] = React.useState<null | 'github' | 'magic'>(null);
+  const [submitting, setSubmitting] = React.useState<null | 'google' | 'github' | 'magic'>(null);
   const [magicSent, setMagicSent] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const signInGoogle = async (): Promise<void> => {
+    setError(null);
+    setSubmitting('google');
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}`,
+        },
+      });
+      if (error) {
+        setError(error.message);
+        setSubmitting(null);
+      }
+      // On success Supabase navigates the tab — no further action.
+    } catch (e) {
+      setError((e as Error).message);
+      setSubmitting(null);
+    }
+  };
 
   const signInGithub = async (): Promise<void> => {
     setError(null);
@@ -109,6 +131,23 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
             </div>
           ) : (
             <>
+              <Button
+                variant="secondary"
+                block
+                onClick={() => {
+                  void signInGoogle();
+                }}
+                loading={submitting === 'google'}
+                disabled={!!submitting}
+              >
+                <Icon.Google size={14} />
+                Continue with Google
+              </Button>
+
+              <div className="text-center font-mono uppercase tracking-[1.4px] text-[9px] text-text-secondary">
+                or
+              </div>
+
               <Button
                 variant="secondary"
                 block
