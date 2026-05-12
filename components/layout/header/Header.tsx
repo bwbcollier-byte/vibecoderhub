@@ -9,6 +9,7 @@ import { Icon } from '@/components/icons/Icon';
 import { cn } from '@/lib/shadcn/cn';
 import { useOverlays } from '@/components/overlays/OverlaysProvider';
 import { useStack } from '@/components/stack-context/StackProvider';
+import { useSession, signOut } from '@/lib/auth/client';
 
 import { MegaMenu } from './MegaMenu';
 import { BookmarkChip } from './BookmarkChip';
@@ -27,7 +28,17 @@ export function Header(): React.ReactElement {
   const pathname = usePathname();
   const { openCmdK, openAuth, openStackPicker } = useOverlays();
   const { stack } = useStack();
+  const { user, loading: sessionLoading } = useSession();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const displayName =
+    (typeof meta.user_name === 'string' && meta.user_name) ||
+    (typeof meta.full_name === 'string' && meta.full_name) ||
+    (typeof user?.email === 'string' && user.email.split('@')[0]!) ||
+    null;
+  const avatarUrl = typeof meta.avatar_url === 'string' ? meta.avatar_url : null;
+  const initial = (displayName ?? 'U').slice(0, 1).toUpperCase();
 
   const isActive = (href: string): boolean =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -127,15 +138,62 @@ export function Header(): React.ReactElement {
 
         <BookmarkChip />
 
-        {/* Auth buttons */}
-        <div className="hide-mobile flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => openAuth('signin')}>
-            Sign in
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => openAuth('signup')}>
-            Get started
-          </Button>
-        </div>
+        {/* Auth — signed-out: Sign in / Get started; signed-in: Dashboard +
+            avatar/handle + sign-out. While the session is still loading on
+            the very first render we show nothing rather than flash the
+            wrong state. */}
+        {sessionLoading ? (
+          <div className="hide-mobile w-[200px] shrink-0" aria-hidden />
+        ) : user ? (
+          <div className="hide-mobile flex items-center gap-2 shrink-0">
+            <Link
+              href="/dashboard"
+              className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-text-secondary hover:text-mint px-2"
+            >
+              Dashboard
+            </Link>
+            <div className="flex items-center gap-2 h-btn-sm pl-2 pr-3 rounded-pill border border-surface bg-canvas-deep">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="rounded-full shrink-0"
+                />
+              ) : (
+                <span
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-mint text-black font-mono font-bold text-[10px]"
+                  aria-hidden
+                >
+                  {initial}
+                </span>
+              )}
+              <span className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-white max-w-[120px] truncate">
+                {displayName}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                void signOut('/');
+              }}
+              className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-text-secondary hover:text-white px-2 cursor-pointer"
+              aria-label="Sign out"
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <div className="hide-mobile flex items-center gap-2 shrink-0">
+            <Button variant="ghost" size="sm" onClick={() => openAuth('signin')}>
+              Sign in
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => openAuth('signup')}>
+              Get started
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Mobile drop-down */}

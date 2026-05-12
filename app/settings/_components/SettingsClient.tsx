@@ -15,6 +15,9 @@ import { DeleteAccountModal } from './DeleteAccountModal';
 interface SettingsClientProps {
   email: string;
   initialDisplayName: string;
+  initialAvatarUrl?: string | null;
+  initialTab?: 'profile' | 'stack' | 'subscription' | 'danger';
+  welcome?: boolean;
 }
 
 const TABS: TabItem[] = [
@@ -31,6 +34,9 @@ const HEADLINE_CLS = 'font-sans font-bold text-[24px] tracking-[-0.01em]';
 export function SettingsClient({
   email,
   initialDisplayName,
+  initialAvatarUrl = null,
+  initialTab,
+  welcome = false,
 }: SettingsClientProps): React.ReactElement {
   return (
     <main className="max-w-xl mx-auto px-4 md:px-8 py-10 pb-20">
@@ -41,11 +47,34 @@ export function SettingsClient({
         </h1>
       </div>
 
-      <Tabs items={TABS} defaultValue="profile">
+      {welcome && (
+        <div className="mb-8 flex items-start gap-4 border border-mint-border bg-mint/5 rounded-tile p-5">
+          <span
+            className="inline-flex items-center justify-center w-10 h-10 rounded-pill bg-mint text-black font-display text-[22px] shrink-0"
+            aria-hidden
+          >
+            ✓
+          </span>
+          <div className="flex flex-col gap-1">
+            <p className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-mint">
+              WELCOME TO VIBE CODER HUB
+            </p>
+            <p className="font-sans text-white text-[16px]">
+              Account ready. Take a minute to fill out your profile so the
+              community knows who&rsquo;s shipping what.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <Tabs items={TABS} defaultValue={initialTab ?? 'profile'}>
         {(active) => (
           <>
             {active === 'profile' && (
-              <ProfileSection initialDisplayName={initialDisplayName} />
+              <ProfileSection
+                initialDisplayName={initialDisplayName}
+                initialAvatarUrl={initialAvatarUrl}
+              />
             )}
             {active === 'stack' && <StackSection />}
             {active === 'subscription' && <SubscriptionSection />}
@@ -61,12 +90,14 @@ export function SettingsClient({
 
 function ProfileSection({
   initialDisplayName,
+  initialAvatarUrl,
 }: {
   initialDisplayName: string;
+  initialAvatarUrl: string | null;
 }): React.ReactElement {
   const [displayName, setDisplayName] = React.useState(initialDisplayName);
   const [bio, setBio] = React.useState('');
-  const [avatarUrl, setAvatarUrl] = React.useState('');
+  const [avatarUrl, setAvatarUrl] = React.useState(initialAvatarUrl ?? '');
   const [websiteUrl, setWebsiteUrl] = React.useState('');
   const [twitter, setTwitter] = React.useState('');
   const [saving, setSaving] = React.useState(false);

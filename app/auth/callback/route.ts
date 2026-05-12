@@ -28,16 +28,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const user = data.session?.user;
+  let firstSignIn = false;
   if (user) {
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-    await ensureProfile({
+    const result = await ensureProfile({
       id: user.id,
       githubHandle: typeof meta.user_name === 'string' ? meta.user_name : null,
       email: user.email ?? null,
       displayName: typeof meta.full_name === 'string' ? meta.full_name : null,
       avatarUrl: typeof meta.avatar_url === 'string' ? meta.avatar_url : null,
     });
+    firstSignIn = result.created;
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  // First sign-in for a brand-new account → onboard via Profile tab with a
+  // welcome banner. Returning users go to wherever they were heading.
+  const target = firstSignIn ? '/settings?tab=profile&welcome=true' : next;
+  return NextResponse.redirect(new URL(target, url.origin));
 }

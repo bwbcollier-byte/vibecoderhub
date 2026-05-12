@@ -30,10 +30,18 @@ function deriveUsername(input: UpsertProfileInput): string {
   return normalised.length >= 2 ? normalised : `user_${input.id.slice(0, 8)}`;
 }
 
-export async function ensureProfile(input: UpsertProfileInput): Promise<void> {
-  await safeQuery(async () => {
+export interface EnsureProfileResult {
+  /** True iff this call inserted a brand-new pk_profiles row (vs. found one). */
+  created: boolean;
+}
+
+export async function ensureProfile(input: UpsertProfileInput): Promise<EnsureProfileResult> {
+  return safeQuery(async () => {
     const username = deriveUsername(input);
-    await db
+    // INSERT ... ON CONFLICT DO NOTHING RETURNING id — Postgres returns no rows
+    // when the conflict suppresses the insert, so an empty array means the
+    // profile already existed.
+    const rows = await db
       .insert(profiles)
       .values({
         id: input.id,
@@ -42,9 +50,10 @@ export async function ensureProfile(input: UpsertProfileInput): Promise<void> {
         avatarUrl: input.avatarUrl ?? null,
         githubHandle: input.githubHandle ?? null,
       })
-      .onConflictDoNothing({ target: profiles.id });
-    return null;
-  }, null);
+      .onConflictDoNothing({ target: profiles.id })
+      .returning({ id: profiles.id });
+    return { created: rows.length > 0 };
+  }, { created: false });
 }
 
 export async function getProfileById(id: string) {

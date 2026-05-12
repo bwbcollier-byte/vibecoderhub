@@ -18,6 +18,8 @@ import {
   type ReactNode,
 } from 'react';
 
+import { toast } from '@/components/ui/toast';
+
 export interface BookmarkEntry {
   /** Stable identifier for de-dupe. Pattern: `{resourceType}:{slug}`. */
   id: string;
@@ -117,6 +119,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }): ReactN
         let next: BookmarkEntry[];
         if (exists) {
           next = prev.filter((b) => b.id !== entry.id);
+          toast.success('Removed bookmark');
         } else {
           if (limit != null && prev.length >= limit) {
             // Silent no-op; UI surfaces a toast / paywall hint at the call
@@ -125,6 +128,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }): ReactN
             return prev;
           }
           next = [{ ...entry, addedAt: new Date().toISOString() }, ...prev];
+          toast.success(`Bookmarked ${entry.name}`);
         }
         persist(next);
         return next;

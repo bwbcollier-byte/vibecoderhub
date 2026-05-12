@@ -10,6 +10,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/toast';
 import { RESOURCE_TYPES } from '@/lib/resource-types';
 import { AI_CLIENTS } from '@/lib/stack/presets';
 import { cn } from '@/lib/shadcn/cn';
@@ -83,6 +84,7 @@ export function SubmitWizard(): React.ReactElement {
     await new Promise((r) => setTimeout(r, 600));
     setSubmitting(false);
     setSubmitted(true);
+    toast.success('Submitted for review');
   }
 
   if (submitted) {

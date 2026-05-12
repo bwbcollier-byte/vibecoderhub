@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/shadcn/cn';
 import {
   useStack,
@@ -49,6 +50,7 @@ export function StackPicker({ onClose }: StackPickerProps): React.ReactElement {
   const applyPreset = (p: StackPreset): void => {
     setClients(p.aiClients);
     setTags(p.techStack);
+    toast.success(`Stack updated with ${p.label}`);
   };
 
   const save = (): void => {
@@ -59,6 +61,7 @@ export function StackPicker({ onClose }: StackPickerProps): React.ReactElement {
       techStack: tags,
     };
     setStack(next);
+    toast.success('Stack saved');
     onClose();
   };
 

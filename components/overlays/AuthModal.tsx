@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/toast';
 import { Icon } from '@/components/icons/Icon';
 import { getSupabaseBrowserClient } from '@/lib/auth/client';
 
@@ -35,6 +36,13 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
   const [magicSent, setMagicSent] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Fire a toast in addition to the inline message — the modal may close
+  // (e.g. on OAuth redirect) before the user sees the inline alert.
+  const reportError = React.useCallback((message: string): void => {
+    setError(message);
+    toast.error('Sign-in failed — try again', { duration: 8000 });
+  }, []);
+
   const signInGoogle = async (): Promise<void> => {
     setError(null);
     setSubmitting('google');
@@ -47,12 +55,12 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
         },
       });
       if (error) {
-        setError(error.message);
+        reportError(error.message);
         setSubmitting(null);
       }
       // On success Supabase navigates the tab — no further action.
     } catch (e) {
-      setError((e as Error).message);
+      reportError((e as Error).message);
       setSubmitting(null);
     }
   };
@@ -69,12 +77,12 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
         },
       });
       if (error) {
-        setError(error.message);
+        reportError(error.message);
         setSubmitting(null);
       }
       // On success Supabase navigates the tab — no further action.
     } catch (e) {
-      setError((e as Error).message);
+      reportError((e as Error).message);
       setSubmitting(null);
     }
   };
@@ -93,12 +101,12 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
         },
       });
       if (error) {
-        setError(error.message);
+        reportError(error.message);
       } else {
         setMagicSent(true);
       }
     } catch (e) {
-      setError((e as Error).message);
+      reportError((e as Error).message);
     } finally {
       setSubmitting(null);
     }
