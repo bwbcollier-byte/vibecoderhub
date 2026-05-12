@@ -53,20 +53,50 @@ async function main() {
   async (ctx) => {
     const token = requireEnv('GITHUB_INGESTION_TOKEN');
 
-    // Incremental: only files changed in last 2 days unless RUN_MODE=full.
-    const mode = process.env.RUN_MODE ?? 'incremental';
-    const since = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
-    const incrementalSuffix = mode === 'incremental' ? ` pushed:>${since}` : '';
+    // NOTE: `pushed:>YYYY-MM-DD` is NOT a valid qualifier on /search/code
+    // (only /search/repositories supports it). Earlier versions of this
+    // script appended ` pushed:>…` to every query, which silently zeroed
+    // the result count.
+    const mode = process.env.RUN_MODE ?? 'full';
 
     let totalSeen = 0;
     const allHits: SearchHit[] = [];
 
+    // Stars aren't returned by /search/code — repo payload there is a stub.
+    // Resolve via /repos/{owner}/{repo}, cached per repo to keep API calls
+    // bounded across queries.
+    const starCache = new Map<string, number>();
+    const STAR_FLOOR = 5;
+
+    async function resolveStars(fullName: string): Promise<number> {
+      const cached = starCache.get(fullName);
+      if (cached !== undefined) return cached;
+      await limiter.acquire();
+      try {
+        const repo = await fetchJson<{ stargazers_count?: number }>(
+          `https://api.github.com/repos/${fullName}`,
+          {
+            headers: {
+              accept: 'application/vnd.github+json',
+              authorization: `Bearer ${token}`,
+              'user-agent': 'vibecoderhub-ingest/1',
+            },
+          },
+        );
+        const n = repo.stargazers_count ?? 0;
+        starCache.set(fullName, n);
+        return n;
+      } catch {
+        starCache.set(fullName, 0);
+        return 0;
+      }
+    }
+
     for (const target of TARGETS) {
-      // Two pages, 100 each → 200 hits per query per run.
       for (let page = 1; page <= 2; page++) {
         await limiter.acquire();
         try {
-          const url = `https://api.github.com/search/code?q=${encodeURIComponent(target.q + incrementalSuffix)}&per_page=100&page=${page}`;
+          const url = `https://api.github.com/search/code?q=${encodeURIComponent(target.q)}&per_page=100&page=${page}`;
           const resp = await fetchJson<SearchResponse>(url, {
             headers: {
               accept: 'application/vnd.github+json',
@@ -76,10 +106,16 @@ async function main() {
           });
           totalSeen += resp.total_count;
           allHits.push(...resp.items);
+          ctx.logger.info('search hit', {
+            q: target.q,
+            page,
+            total: resp.total_count,
+            returned: resp.items.length,
+          });
 
           for (const hit of resp.items) {
-            const stars = hit.repository.stargazers_count ?? 0;
-            if (stars < 5) continue;
+            const stars = await resolveStars(hit.repository.full_name);
+            if (stars < STAR_FLOOR) continue;
 
             const slug = slugify(`${hit.repository.full_name}-${hit.path}`);
             await upsertResource(ctx, {
@@ -105,6 +141,7 @@ async function main() {
     await ctx.dump({ hits: allHits });
     ctx.metadata.totalSeen = totalSeen;
     ctx.metadata.mode = mode;
+    ctx.metadata.uniqueRepos = starCache.size;
   },
 );
 
