@@ -9,7 +9,7 @@
 
 import type { ReactElement } from 'react';
 
-import { listModels } from '@/lib/db/queries/models';
+import { listModels, getModelCount } from '@/lib/db/queries/models';
 
 import { ModelsList } from './_components/ModelsList';
 
@@ -20,7 +20,10 @@ export const metadata = {
 };
 
 export default async function ModelsIndexPage(): Promise<ReactElement> {
-  const models = await listModels();
+  // models is the page's first batch (capped at 200 by the query layer);
+  // totalCount is the unfiltered DB row count for the kicker so the hero
+  // doesn't lie when the result set is bigger than the cap.
+  const [models, totalCount] = await Promise.all([listModels(), getModelCount()]);
 
   return (
     <div className="max-w-xxl mx-auto px-4 md:px-8 py-10 pb-20">
@@ -28,7 +31,7 @@ export default async function ModelsIndexPage(): Promise<ReactElement> {
       <header className="flex items-end justify-between flex-wrap gap-4 mb-8">
         <div>
           <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-mint mb-3">
-            ◯ · {models.length.toLocaleString()} INDEXED
+            ◯ · {(totalCount || models.length).toLocaleString()} INDEXED
           </p>
           <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(56px,10vw,128px)]">
             Models.

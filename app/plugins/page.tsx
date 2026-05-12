@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { PLUGINS } from '@/lib/seed/_configs';
-import { listResources } from '@/lib/db/queries/resources';
+import { listResources, getResourceCount } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -11,6 +11,9 @@ export const metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const items = await listResources(PLUGINS.config.typeId);
-  return <ResourceIndexPage items={items} config={PLUGINS.config} />;
+  const [items, totalCount] = await Promise.all([
+    listResources(PLUGINS.config.typeId),
+    getResourceCount(PLUGINS.config.typeId),
+  ]);
+  return <ResourceIndexPage items={items} config={PLUGINS.config} totalCount={totalCount} />;
 }

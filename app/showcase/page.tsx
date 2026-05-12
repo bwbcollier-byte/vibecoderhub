@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { SHOWCASE } from '@/lib/seed/_configs';
-import { listResources } from '@/lib/db/queries/resources';
+import { listResources, getResourceCount } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -10,6 +10,9 @@ export const metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const items = await listResources(SHOWCASE.config.typeId);
-  return <ResourceIndexPage items={items} config={SHOWCASE.config} />;
+  const [items, totalCount] = await Promise.all([
+    listResources(SHOWCASE.config.typeId),
+    getResourceCount(SHOWCASE.config.typeId),
+  ]);
+  return <ResourceIndexPage items={items} config={SHOWCASE.config} totalCount={totalCount} />;
 }

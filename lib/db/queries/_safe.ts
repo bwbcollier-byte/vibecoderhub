@@ -4,16 +4,18 @@
 
 import 'server-only';
 
-let warned = false;
-
-export async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+export async function safeQuery<T>(fn: () => Promise<T>, fallback: T, label?: string): Promise<T> {
   try {
     return await fn();
   } catch (err) {
-    if (!warned) {
-      warned = true;
-      console.warn('[db] query failed; returning fallback. Subsequent failures suppressed.', err);
-    }
+    // Log every failure (not just the first). Previous behaviour suppressed
+    // subsequent errors via a module-level singleton, which made debugging
+    // home-page emptiness impossible — one early build-time failure poisoned
+    // every later request.
+    const tag = label ? `[db:${label}]` : '[db]';
+    const msg = err instanceof Error ? err.message : String(err);
+    const code = (err as { code?: string })?.code;
+    console.warn(`${tag} query failed → fallback. ${code ? `[${code}] ` : ''}${msg}`);
     return fallback;
   }
 }

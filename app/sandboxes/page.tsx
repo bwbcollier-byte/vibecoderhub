@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { SANDBOXES } from '@/lib/seed/_configs';
-import { listResources } from '@/lib/db/queries/resources';
+import { listResources, getResourceCount } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -10,6 +10,9 @@ export const metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const items = await listResources(SANDBOXES.config.typeId);
-  return <ResourceIndexPage items={items} config={SANDBOXES.config} />;
+  const [items, totalCount] = await Promise.all([
+    listResources(SANDBOXES.config.typeId),
+    getResourceCount(SANDBOXES.config.typeId),
+  ]);
+  return <ResourceIndexPage items={items} config={SANDBOXES.config} totalCount={totalCount} />;
 }

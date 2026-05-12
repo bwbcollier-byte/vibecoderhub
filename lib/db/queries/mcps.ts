@@ -1,7 +1,7 @@
 // Live queries against pk_resources ⋈ pk_mcps. Drop-in for lib/seed/mcps.ts.
 
 import 'server-only';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/server/db';
 import { resources, mcps } from '@/db/schema';
@@ -70,6 +70,16 @@ export async function listMcpSlugs(): Promise<string[]> {
     const rows = await db.select({ slug: resources.slug }).from(resources).where(baseWhere);
     return rows.map((r) => r.slug);
   }, []);
+}
+
+export async function getMcpCount(): Promise<number> {
+  return safeQuery(async () => {
+    const rows = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(resources)
+      .where(baseWhere);
+    return rows[0]?.n ?? 0;
+  }, 0);
 }
 
 type ResourceRow = typeof resources.$inferSelect;

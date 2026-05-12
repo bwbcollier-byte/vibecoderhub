@@ -3,7 +3,7 @@
 // GenericResourceIndex / DetailChassis components consume directly.
 
 import 'server-only';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/server/db';
 import { resources } from '@/db/schema';
@@ -87,6 +87,19 @@ export async function listResourceSlugs(typeId: ResourceTypeId): Promise<string[
       .where(baseWhere(typeId));
     return rows.map((r) => r.slug);
   }, []);
+}
+
+/** Total published rows for a given type — used by index-page kickers so the
+    "X INDEXED" count doesn't lie when the listResources query LIMITs the
+    returned items. Cheap; covered by `resources_type_idx`. */
+export async function getResourceCount(typeId: ResourceTypeId): Promise<number> {
+  return safeQuery(async () => {
+    const rows = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(resources)
+      .where(baseWhere(typeId));
+    return rows[0]?.n ?? 0;
+  }, 0);
 }
 
 type ResourceRow = typeof resources.$inferSelect;
