@@ -4,11 +4,15 @@
 // Daily for known components, weekly full sitemap re-crawl. This script
 // handles both: pulls the sitemap, queues each registry URL.
 
+import { eq, inArray } from 'drizzle-orm';
+
 import { withIngestionRun } from './_shared/runs';
 import { fetchJson, fetchText } from './_shared/retry';
 import { RateLimiter } from './_shared/rate-limiter';
 import { upsertResource } from './_shared/dedup';
 import { slugify } from './_shared/slug';
+import { getDb } from './_shared/db';
+import { resources } from '@/db/schema';
 
 const limiter = new RateLimiter(30, 60_000);
 
@@ -51,13 +55,46 @@ async function main() {
       return true;
     });
 
-    const MAX = 200;
-    const targets = unique.slice(0, MAX);
+    // Resume across runs by skipping URLs already in pk_resources. Each
+    // sitemap entry has a stable detail URL we use as `source_url` on
+    // upsert, so the same URL across runs hits the same row. We chunk the
+    // existence query because Postgres `IN (…)` arrays > a few thousand
+    // become unwieldy; 4,500 fits in one round-trip but the chunking keeps
+    // headroom if 21st grows.
+    const allDetailUrls = unique.map(
+      (p) => `https://21st.dev/community/components/${p.user}/${p.slug}`,
+    );
+    const db = getDb();
+    const existing = new Set<string>();
+    const CHUNK = 1000;
+    for (let i = 0; i < allDetailUrls.length; i += CHUNK) {
+      const slice = allDetailUrls.slice(i, i + CHUNK);
+      const rows = await db
+        .select({ url: resources.sourceUrl })
+        .from(resources)
+        .where(
+          slice.length === 1
+            ? eq(resources.sourceUrl, slice[0]!)
+            : inArray(resources.sourceUrl, slice),
+        );
+      for (const r of rows) if (r.url) existing.add(r.url);
+    }
+
+    const todo = unique.filter(
+      (p) => !existing.has(`https://21st.dev/community/components/${p.user}/${p.slug}`),
+    );
+
+    const MAX_PER_RUN = 200;
+    const targets = todo.slice(0, MAX_PER_RUN);
     ctx.metadata.discovered = unique.length;
+    ctx.metadata.alreadyIngested = existing.size;
+    ctx.metadata.todo = todo.length;
     ctx.metadata.attempted = targets.length;
     ctx.logger.info('21st sitemap parsed', {
       sitemapBytes: sitemap.length,
       uniqueComponents: unique.length,
+      alreadyIngested: existing.size,
+      remaining: todo.length,
       attempting: targets.length,
     });
 

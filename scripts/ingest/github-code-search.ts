@@ -36,9 +36,15 @@ interface SearchResponse {
 const TARGETS: Array<{ q: string; type: Parameters<typeof upsertResource>[1]['typeSlug'] }> = [
   { q: 'filename:SKILL.md language:markdown', type: 'skill' },
   { q: 'filename:AGENT.md', type: 'subagent' },
+  { q: 'filename:agent.md', type: 'subagent' },
   { q: 'filename:AGENTS.md', type: 'subagent' },
   { q: 'filename:.cursorrules', type: 'rule' },
   { q: 'filename:CLAUDE.md', type: 'rule' },
+  { q: 'filename:rules.md', type: 'rule' },
+  { q: 'filename:.clinerules', type: 'rule' },
+  { q: 'filename:.roomodes', type: 'rule' },
+  { q: 'filename:.aiderignore', type: 'rule' },
+  { q: 'filename:system-prompt.md', type: 'prompt' },
   { q: 'path:.claude/commands extension:md', type: 'command' },
   { q: 'path:.claude/hooks extension:json', type: 'hook' },
 ];
