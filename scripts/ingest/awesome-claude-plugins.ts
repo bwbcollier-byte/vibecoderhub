@@ -10,28 +10,36 @@ import { slugify } from './_shared/slug';
 
 const limiter = new RateLimiter(30, 60_000);
 const SOURCE_RAW =
-  'https://raw.githubusercontent.com/hesreallyhim/awesome-claude-code/main/README.md';
+  'https://raw.githubusercontent.com/quemsah/awesome-claude-plugins/main/README.md';
 
 interface Entry {
   name: string;
   url: string;
   description: string;
+  stars: number;
 }
 
+// Repo README is a markdown table:
+//   | # | [name](url) | description | stars | subs | plugins |
 function parseAwesome(md: string): Entry[] {
   const entries: Entry[] = [];
-  // Match list items shaped like:  - [Name](url) - description
-  const re = /^[\s]*[-*][\s]+\[([^\]]+)\]\((https?:\/\/[^)]+)\)\s*[-—:]?\s*(.*)$/gm;
+  const lineRe = /^\|\s*\d+\s*\|\s*\[([^\]]+)\]\((https?:\/\/[^)]+)\)\s*\|\s*([^|]*?)\s*\|\s*(\d+)\s*\|/gm;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(md)) !== null) {
-    const [, name, url, desc] = m;
+  while ((m = lineRe.exec(md)) !== null) {
+    const [, name, url, desc, stars] = m;
     if (!name || !url) continue;
-    entries.push({ name: name.trim(), url: url.trim(), description: (desc ?? '').trim() });
+    entries.push({
+      name: name.trim(),
+      url: url.trim(),
+      description: (desc ?? '').trim(),
+      stars: Number.parseInt(stars ?? '0', 10) || 0,
+    });
   }
   return entries;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'awesome-claude-plugins', priority: 'normal' },
   async (ctx) => {
     await limiter.acquire();
@@ -54,3 +62,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

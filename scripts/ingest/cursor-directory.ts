@@ -18,7 +18,8 @@ interface RuleEntry {
   url?: string;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'cursor-directory', priority: 'normal' },
   async (ctx) => {
     await limiter.acquire();
@@ -47,3 +48,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

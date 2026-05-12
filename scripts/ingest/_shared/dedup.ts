@@ -3,7 +3,7 @@
 
 import { sql } from 'drizzle-orm';
 
-import { resources } from '@/db/schema';
+import { resources, news } from '@/db/schema';
 import type { resourceTypeEnum } from '@/db/enums';
 
 import type { RunContext } from './runs';
@@ -59,6 +59,7 @@ export async function upsertResource(
       })
       .onConflictDoUpdate({
         target: [resources.typeSlug, resources.slug],
+        targetWhere: sql`deleted_at is null`,
         set: {
           name: input.name.slice(0, 200),
           tagline: input.tagline ?? null,
@@ -88,6 +89,81 @@ export async function upsertResource(
     ctx.logger.warn('upsert failed', {
       slug,
       typeSlug: input.typeSlug,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// News upsert — pk_news has its own table (not part of the resources spine).
+// Idempotent on the unique slug.
+// ---------------------------------------------------------------------------
+
+type NewsKind = 'ecosystem' | 'release' | 'price_change' | 'tutorial' | 'op_ed';
+type NewsSourceKind = 'editorial' | 'auto_generated' | 'rss_imported';
+
+export interface NewsUpsert {
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body?: string | null;
+  kind: NewsKind;
+  sourceKind: NewsSourceKind;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+  publishedAt?: Date | null;
+  topics?: string[];
+  isBreaking?: boolean;
+}
+
+export async function upsertNews(
+  ctx: RunContext,
+  input: NewsUpsert,
+): Promise<{ id: string; created: boolean }> {
+  const db = getDb();
+  const slug = input.slug.slice(0, 80);
+  try {
+    const rows = await db
+      .insert(news)
+      .values({
+        slug,
+        title: input.title.slice(0, 300),
+        summary: input.summary ?? null,
+        body: input.body ?? null,
+        kind: input.kind,
+        sourceKind: input.sourceKind,
+        sourceName: input.sourceName ?? null,
+        sourceUrl: input.sourceUrl ?? null,
+        publishedAt: input.publishedAt ?? new Date(),
+        topics: input.topics ?? [],
+        isBreaking: input.isBreaking ?? false,
+      })
+      .onConflictDoUpdate({
+        target: news.slug,
+        set: {
+          title: input.title.slice(0, 300),
+          summary: input.summary ?? null,
+          body: input.body ?? null,
+          kind: input.kind,
+          sourceKind: input.sourceKind,
+          sourceName: input.sourceName ?? null,
+          sourceUrl: input.sourceUrl ?? null,
+          topics: input.topics ?? [],
+          isBreaking: input.isBreaking ?? false,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning({ id: news.id, created: sql<boolean>`(xmax = 0)` });
+    const row = rows[0];
+    if (!row) throw new Error('news upsert returned no row');
+    if (row.created) ctx.counters.inserted += 1;
+    else ctx.counters.updated += 1;
+    return row;
+  } catch (err) {
+    ctx.counters.failed += 1;
+    ctx.logger.warn('news upsert failed', {
+      slug,
       err: err instanceof Error ? err.message : String(err),
     });
     throw err;

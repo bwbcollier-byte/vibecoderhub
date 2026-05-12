@@ -1,11 +1,13 @@
 /**
  * Resolves comparison row ids (`${typeId}:${slug}`) to a unified CompareItem
- * shape by walking the seed modules. Pure helper — no React, no overlays.
+ * shape via the live query layer. Falls back to undefined fields when the
+ * underlying resource lacks a value.
  */
 
-import { getModelBySlug } from '@/lib/seed/models';
-import { getMcpBySlug } from '@/lib/seed/mcps';
-import * as Configs from '@/lib/seed/_configs';
+import { getModelBySlug } from '@/lib/db/queries/models';
+import { getMcpBySlug } from '@/lib/db/queries/mcps';
+import { getResourceBySlug } from '@/lib/db/queries/resources';
+import { RESOURCE_TYPES, type ResourceTypeId } from '@/lib/resource-types';
 
 export interface CompareItem {
   id: string;
@@ -30,20 +32,13 @@ export interface CompareItem {
   toolCount?: number;
 }
 
-interface TypeBundleLike {
-  config: { typeId: string; basePath: string };
-  items: Array<{
-    slug: string;
-    name: string;
-    author: string;
-    license: string;
-    compatibleClients: string[];
-    ratingAvg: number;
-    installCount7d: number;
-  }>;
+const RESOURCE_TYPE_IDS = new Set<string>(RESOURCE_TYPES.map((t) => t.id));
+
+function resourceBasePath(typeId: string): string {
+  return RESOURCE_TYPES.find((t) => t.id === typeId)?.slug ?? `${typeId}s`;
 }
 
-function resolveOne(id: string): CompareItem | null {
+async function resolveOne(id: string): Promise<CompareItem | null> {
   const colonIdx = id.indexOf(':');
   if (colonIdx <= 0) return null;
   const type = id.slice(0, colonIdx);
@@ -51,7 +46,7 @@ function resolveOne(id: string): CompareItem | null {
   if (!type || !slug) return null;
 
   if (type === 'model') {
-    const m = getModelBySlug(slug);
+    const m = await getModelBySlug(slug);
     if (!m) return null;
     return {
       id,
@@ -61,21 +56,20 @@ function resolveOne(id: string): CompareItem | null {
       href: `/models/${slug}`,
       author: m.provider,
       providerColor: m.providerColor,
-      ratingAvg: undefined,
-      installCount7d: undefined,
       license: m.isOpenWeights ? 'Open weights' : 'Proprietary',
-      compatibleClients: undefined,
       priceInputPerMtok: m.priceInputPerMtok,
       priceOutputPerMtok: m.priceOutputPerMtok,
       blendedCostPerMtok: m.blendedCostPerMtok,
-      intelligenceIndex: m.intelligenceIndex,
-      contextWindowAdvertised: m.contextWindowAdvertised,
-      outputTokensPerSecond: m.outputTokensPerSecond,
+      intelligenceIndex: m.intelligenceIndex > 0 ? m.intelligenceIndex : undefined,
+      contextWindowAdvertised:
+        m.contextWindowAdvertised > 0 ? m.contextWindowAdvertised : undefined,
+      outputTokensPerSecond:
+        m.outputTokensPerSecond > 0 ? m.outputTokensPerSecond : undefined,
     };
   }
 
   if (type === 'mcp') {
-    const m = getMcpBySlug(slug);
+    const m = await getMcpBySlug(slug);
     if (!m) return null;
     return {
       id,
@@ -83,48 +77,42 @@ function resolveOne(id: string): CompareItem | null {
       slug,
       name: m.name,
       href: `/mcps/${slug}`,
-      author: m.author,
-      ratingAvg: m.ratingAvg,
-      installCount7d: m.installCount7d,
-      license: m.license,
-      compatibleClients: m.compatibleClients,
-      toolCount: m.toolCount,
+      author: m.author || undefined,
+      ratingAvg: m.ratingAvg > 0 ? m.ratingAvg : undefined,
+      installCount7d: m.installCount7d > 0 ? m.installCount7d : undefined,
+      license: m.license !== 'unknown' ? m.license : undefined,
+      compatibleClients: m.compatibleClients.length > 0 ? m.compatibleClients : undefined,
+      toolCount: m.toolCount > 0 ? m.toolCount : undefined,
     };
   }
 
-  // Walk generic bundles for everything else.
-  const bundles = Object.values(Configs) as unknown as TypeBundleLike[];
-  for (const b of bundles) {
-    if (!b || typeof b !== 'object' || !('config' in b)) continue;
-    if (b.config.typeId !== type) continue;
-    const item = b.items.find((it) => it.slug === slug);
-    if (!item) return null;
-    return {
-      id,
-      type,
-      slug,
-      name: item.name,
-      href: `/${b.config.basePath}/${slug}`,
-      author: item.author,
-      ratingAvg: item.ratingAvg,
-      installCount7d: item.installCount7d,
-      license: item.license,
-      compatibleClients: item.compatibleClients,
-    };
-  }
-
-  return null;
+  // Generic resource types — anything in RESOURCE_TYPES other than model/mcp.
+  if (!RESOURCE_TYPE_IDS.has(type)) return null;
+  const r = await getResourceBySlug(type as ResourceTypeId, slug);
+  if (!r) return null;
+  return {
+    id,
+    type,
+    slug,
+    name: r.name,
+    href: `/${resourceBasePath(type)}/${slug}`,
+    author: r.author || undefined,
+    ratingAvg: r.ratingAvg > 0 ? r.ratingAvg : undefined,
+    installCount7d: r.installCount7d > 0 ? r.installCount7d : undefined,
+    license: r.license !== 'unknown' ? r.license : undefined,
+    compatibleClients: r.compatibleClients.length > 0 ? r.compatibleClients : undefined,
+  };
 }
 
-export function resolveCompareIds(ids: string[]): CompareItem[] {
+export async function resolveCompareIds(ids: string[]): Promise<CompareItem[]> {
   const seen = new Set<string>();
-  const out: CompareItem[] = [];
+  const dedup: string[] = [];
   for (const raw of ids) {
     const id = raw.trim();
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    const item = resolveOne(id);
-    if (item) out.push(item);
+    dedup.push(id);
   }
-  return out;
+  const resolved = await Promise.all(dedup.map(resolveOne));
+  return resolved.filter((x): x is CompareItem => x !== null);
 }

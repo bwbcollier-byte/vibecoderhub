@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { STACKS } from '@/lib/seed/_configs';
+import { listResources } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
   description: 'Opinionated full-stack combinations — T3, Astro Content, Convex.',
 };
 
-export default function Page(): ReactElement {
-  return <ResourceIndexPage items={STACKS.items} config={STACKS.config} />;
+export default async function Page(): Promise<ReactElement> {
+  const items = await listResources(STACKS.config.typeId);
+  return <ResourceIndexPage items={items} config={STACKS.config} />;
 }

@@ -86,33 +86,53 @@ export function McpCard({
         <p className={cn('text-[13px] leading-[1.5]', toneStyles.stat)}>{mcp.tagline}</p>
       </Link>
 
-      <dl
-        className={cn(
-          'flex flex-wrap gap-x-3 gap-y-1 mb-3 font-mono text-[11px] tabular-nums',
-          toneStyles.stat,
-        )}
-      >
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Tools</dt>
-          <dd>{mcp.toolCount} tools</dd>
-        </div>
-        <span aria-hidden>·</span>
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Resources</dt>
-          <dd>{mcp.resourceCount} resources</dd>
-        </div>
-        <span aria-hidden>·</span>
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Prompts</dt>
-          <dd>{mcp.promptCount} prompts</dd>
-        </div>
-      </dl>
+      {(mcp.toolCount > 0 || mcp.resourceCount > 0 || mcp.promptCount > 0) && (
+        <dl
+          className={cn(
+            'flex flex-wrap gap-x-3 gap-y-1 mb-3 font-mono text-[11px] tabular-nums',
+            toneStyles.stat,
+          )}
+        >
+          {mcp.toolCount > 0 && (
+            <>
+              <div className="flex items-center gap-1">
+                <dt className="sr-only">Tools</dt>
+                <dd>{mcp.toolCount} tools</dd>
+              </div>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          {mcp.resourceCount > 0 && (
+            <>
+              <div className="flex items-center gap-1">
+                <dt className="sr-only">Resources</dt>
+                <dd>{mcp.resourceCount} resources</dd>
+              </div>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          {mcp.promptCount > 0 && (
+            <div className="flex items-center gap-1">
+              <dt className="sr-only">Prompts</dt>
+              <dd>{mcp.promptCount} prompts</dd>
+            </div>
+          )}
+        </dl>
+      )}
 
       <div className={cn('flex flex-wrap items-center gap-3 mb-3 font-mono text-[11px] tabular-nums', toneStyles.stat)}>
-        <span>★ {mcp.ratingAvg.toFixed(1)}</span>
-        <span>·</span>
-        <span>{(mcp.installCount7d / 1000).toFixed(1)}k/wk</span>
-        <span>·</span>
+        {mcp.ratingAvg > 0 && (
+          <>
+            <span>★ {mcp.ratingAvg.toFixed(1)}</span>
+            <span>·</span>
+          </>
+        )}
+        {mcp.installCount7d > 0 && (
+          <>
+            <span>{(mcp.installCount7d / 1000).toFixed(1)}k/wk</span>
+            <span>·</span>
+          </>
+        )}
         <span>{mcp.updatedLabel}</span>
       </div>
 

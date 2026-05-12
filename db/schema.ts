@@ -61,8 +61,7 @@ const vector1536 = customType<{ data: number[]; driverData: string }>({
 // profiles.id references auth.users(id). Drizzle has no model for the
 // Supabase auth schema, so the FK to auth.users is enforced at the DB layer
 // only (see SQL migration). Here it's a plain uuid primary key.
-export const profiles = pgTable(
-  'profiles',
+export const profiles = pgTable('pk_profiles',
   {
     id: uuid('id').primaryKey(),
     username: citext('username').notNull().unique(),
@@ -99,8 +98,7 @@ export const profiles = pgTable(
   }),
 );
 
-export const userStacks = pgTable(
-  'user_stacks',
+export const userStacks = pgTable('pk_user_stacks',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -143,8 +141,7 @@ export const userStacks = pgTable(
   }),
 );
 
-export const apiKeys = pgTable(
-  'api_keys',
+export const apiKeys = pgTable('pk_api_keys',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -173,8 +170,7 @@ export const apiKeys = pgTable(
 //   tsvector generated always as (to_tsvector('english', name || tagline || ...)) stored
 // Drizzle types only see the column shape; the SQL migration is authoritative
 // for the generation expression.
-export const resources = pgTable(
-  'resources',
+export const resources = pgTable('pk_resources',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     typeSlug: resourceTypeEnum('type_slug').notNull(),
@@ -267,8 +263,7 @@ export const resources = pgTable(
   }),
 );
 
-export const resourceVersions = pgTable(
-  'resource_versions',
+export const resourceVersions = pgTable('pk_resource_versions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -293,7 +288,7 @@ export const resourceVersions = pgTable(
 // 5. TYPE-SPECIFIC EXTENSION TABLES
 // ---------------------------------------------------------------------------
 
-export const components = pgTable('components', {
+export const components = pgTable('pk_components', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -311,7 +306,7 @@ export const components = pgTable('components', {
   sandpackTemplate: text('sandpack_template').default('react'),
 });
 
-export const mcps = pgTable('mcps', {
+export const mcps = pgTable('pk_mcps', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -327,7 +322,7 @@ export const mcps = pgTable('mcps', {
   p95LatencyMs: integer('p95_latency_ms'),
 });
 
-export const models = pgTable('models', {
+export const models = pgTable('pk_models', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -369,8 +364,7 @@ export const models = pgTable('models', {
   euAiActTier: text('eu_ai_act_tier'),
 });
 
-export const modelPriceHistory = pgTable(
-  'model_price_history',
+export const modelPriceHistory = pgTable('pk_model_price_history',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     modelId: uuid('model_id')
@@ -389,8 +383,7 @@ export const modelPriceHistory = pgTable(
   }),
 );
 
-export const modelProviders = pgTable(
-  'model_providers',
+export const modelProviders = pgTable('pk_model_providers',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     modelId: uuid('model_id')
@@ -415,8 +408,7 @@ export const modelProviders = pgTable(
   }),
 );
 
-export const modelBenchmarks = pgTable(
-  'model_benchmarks',
+export const modelBenchmarks = pgTable('pk_model_benchmarks',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     modelId: uuid('model_id')
@@ -436,7 +428,7 @@ export const modelBenchmarks = pgTable(
   }),
 );
 
-export const skills = pgTable('skills', {
+export const skills = pgTable('pk_skills', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -447,7 +439,7 @@ export const skills = pgTable('skills', {
   triggerExamples: text('trigger_examples').array().default([]),
 });
 
-export const subagents = pgTable('subagents', {
+export const subagents = pgTable('pk_subagents', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -460,7 +452,7 @@ export const subagents = pgTable('subagents', {
   triggerExamples: text('trigger_examples').array().default([]),
 });
 
-export const scripts = pgTable('scripts', {
+export const scripts = pgTable('pk_scripts', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -473,7 +465,7 @@ export const scripts = pgTable('scripts', {
   installMethod: installMethodEnum('install_method').array(),
 });
 
-export const rules = pgTable('rules', {
+export const rules = pgTable('pk_rules', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -485,7 +477,7 @@ export const rules = pgTable('rules', {
   perIdeCompatibility: jsonb('per_ide_compatibility').default({}),
 });
 
-export const prompts = pgTable('prompts', {
+export const prompts = pgTable('pk_prompts', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -496,7 +488,7 @@ export const prompts = pgTable('prompts', {
   exampleOutputs: jsonb('example_outputs').default([]),
 });
 
-export const plugins = pgTable('plugins', {
+export const plugins = pgTable('pk_plugins', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -510,7 +502,7 @@ export const plugins = pgTable('plugins', {
   installCommand: text('install_command'),
 });
 
-export const marketplaces = pgTable('marketplaces', {
+export const marketplaces = pgTable('pk_marketplaces', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -522,7 +514,7 @@ export const marketplaces = pgTable('marketplaces', {
   philosophy: text('philosophy'),
 });
 
-export const hooks = pgTable('hooks', {
+export const hooks = pgTable('pk_hooks', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -533,7 +525,7 @@ export const hooks = pgTable('hooks', {
   configSnippet: jsonb('config_snippet'),
 });
 
-export const commands = pgTable('commands', {
+export const commands = pgTable('pk_commands', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -546,7 +538,7 @@ export const commands = pgTable('commands', {
   sampleInvocations: text('sample_invocations').array().default([]),
 });
 
-export const starters = pgTable('starters', {
+export const starters = pgTable('pk_starters', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -564,7 +556,7 @@ export const starters = pgTable('starters', {
   deployCount24h: integer('deploy_count_24h').default(0).notNull(),
 });
 
-export const tools = pgTable('tools', {
+export const tools = pgTable('pk_tools', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -578,7 +570,7 @@ export const tools = pgTable('tools', {
   downloadUrls: jsonb('download_urls').default({}),
 });
 
-export const sandboxes = pgTable('sandboxes', {
+export const sandboxes = pgTable('pk_sandboxes', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -592,7 +584,7 @@ export const sandboxes = pgTable('sandboxes', {
   quickstartSnippet: text('quickstart_snippet'),
 });
 
-export const observability = pgTable('observability', {
+export const observability = pgTable('pk_observability', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -604,7 +596,7 @@ export const observability = pgTable('observability', {
   complianceCerts: text('compliance_certs').array().default([]),
 });
 
-export const backendKits = pgTable('backend_kits', {
+export const backendKits = pgTable('pk_backend_kits', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -619,7 +611,7 @@ export const backendKits = pgTable('backend_kits', {
   primaryLanguages: text('primary_languages').array().default([]),
 });
 
-export const assets = pgTable('assets', {
+export const assets = pgTable('pk_assets', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -632,7 +624,7 @@ export const assets = pgTable('assets', {
   commercialUseAllowed: boolean('commercial_use_allowed').default(true).notNull(),
 });
 
-export const showcase = pgTable('showcase', {
+export const showcase = pgTable('pk_showcase', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -645,7 +637,7 @@ export const showcase = pgTable('showcase', {
   statsData: jsonb('stats_data').default({}),
 });
 
-export const docsForLlms = pgTable('docs_for_llms', {
+export const docsForLlms = pgTable('pk_docs_for_llms', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -660,7 +652,7 @@ export const docsForLlms = pgTable('docs_for_llms', {
   provider: text('provider'),
 });
 
-export const specs = pgTable('specs', {
+export const specs = pgTable('pk_specs', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -671,7 +663,7 @@ export const specs = pgTable('specs', {
   bestFor: text('best_for').array().default([]),
 });
 
-export const workflows = pgTable('workflows', {
+export const workflows = pgTable('pk_workflows', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -684,7 +676,7 @@ export const workflows = pgTable('workflows', {
   completionCount: integer('completion_count').default(0).notNull(),
 });
 
-export const evals = pgTable('evals', {
+export const evals = pgTable('pk_evals', {
   id: uuid('id')
     .primaryKey()
     .references(() => resources.id, { onDelete: 'cascade' }),
@@ -702,8 +694,7 @@ export const evals = pgTable('evals', {
 // 6. SOCIAL & ENGAGEMENT
 // ---------------------------------------------------------------------------
 
-export const reviews = pgTable(
-  'reviews',
+export const reviews = pgTable('pk_reviews',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -736,8 +727,7 @@ export const reviews = pgTable(
   }),
 );
 
-export const reviewVotes = pgTable(
-  'review_votes',
+export const reviewVotes = pgTable('pk_review_votes',
   {
     userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
     reviewId: uuid('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
@@ -752,8 +742,7 @@ export const reviewVotes = pgTable(
 // comments.news_id FK and comments.parent_comment_id self-FK use lazy
 // callbacks. The news FK is added by `alter table` in SQL, but Drizzle defines
 // it inline via a forward reference to the `news` table below.
-export const comments = pgTable(
-  'comments',
+export const comments = pgTable('pk_comments',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -786,8 +775,7 @@ export const comments = pgTable(
   }),
 );
 
-export const promptingTips = pgTable(
-  'prompting_tips',
+export const promptingTips = pgTable('pk_prompting_tips',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -807,8 +795,7 @@ export const promptingTips = pgTable(
 
 // bookmarks.collection_id FK is added via `alter table` in SQL after
 // collections is declared. Drizzle uses a lazy callback to the forward ref.
-export const bookmarks = pgTable(
-  'bookmarks',
+export const bookmarks = pgTable('pk_bookmarks',
   {
     userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -823,8 +810,7 @@ export const bookmarks = pgTable(
   }),
 );
 
-export const collections = pgTable(
-  'collections',
+export const collections = pgTable('pk_collections',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -847,8 +833,7 @@ export const collections = pgTable(
   }),
 );
 
-export const compatibilityReports = pgTable(
-  'compatibility_reports',
+export const compatibilityReports = pgTable('pk_compatibility_reports',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -866,8 +851,7 @@ export const compatibilityReports = pgTable(
   }),
 );
 
-export const resourceDependencies = pgTable(
-  'resource_dependencies',
+export const resourceDependencies = pgTable('pk_resource_dependencies',
   {
     parentId: uuid('parent_id').references(() => resources.id, { onDelete: 'cascade' }),
     childId: uuid('child_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -881,8 +865,7 @@ export const resourceDependencies = pgTable(
   }),
 );
 
-export const resourceAlternatives = pgTable(
-  'resource_alternatives',
+export const resourceAlternatives = pgTable('pk_resource_alternatives',
   {
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
     alternativeId: uuid('alternative_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -897,8 +880,7 @@ export const resourceAlternatives = pgTable(
   }),
 );
 
-export const useCases = pgTable(
-  'use_cases',
+export const useCases = pgTable('pk_use_cases',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     slug: text('slug').notNull().unique(),
@@ -912,8 +894,7 @@ export const useCases = pgTable(
   }),
 );
 
-export const bestFor = pgTable(
-  'best_for',
+export const bestFor = pgTable('pk_best_for',
   {
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
     useCaseId: uuid('use_case_id').references(() => useCases.id, { onDelete: 'cascade' }),
@@ -931,8 +912,7 @@ export const bestFor = pgTable(
 // 7. DEALS
 // ---------------------------------------------------------------------------
 
-export const deals = pgTable(
-  'deals',
+export const deals = pgTable('pk_deals',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     slug: text('slug').notNull().unique(),
@@ -982,8 +962,7 @@ export const deals = pgTable(
   }),
 );
 
-export const dealClaims = pgTable(
-  'deal_claims',
+export const dealClaims = pgTable('pk_deal_claims',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     dealId: uuid('deal_id')
@@ -1016,8 +995,7 @@ export const dealClaims = pgTable(
 // 8. NEWS
 // ---------------------------------------------------------------------------
 
-export const news = pgTable(
-  'news',
+export const news = pgTable('pk_news',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     slug: text('slug').notNull().unique(),
@@ -1060,8 +1038,7 @@ export const news = pgTable(
   }),
 );
 
-export const newsletterSubscribers = pgTable(
-  'newsletter_subscribers',
+export const newsletterSubscribers = pgTable('pk_newsletter_subscribers',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     email: citext('email').notNull().unique(),
@@ -1088,8 +1065,7 @@ export const newsletterSubscribers = pgTable(
 // 9. GUIDES
 // ---------------------------------------------------------------------------
 
-export const guides = pgTable(
-  'guides',
+export const guides = pgTable('pk_guides',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -1129,8 +1105,7 @@ export const guides = pgTable(
   }),
 );
 
-export const guideSteps = pgTable(
-  'guide_steps',
+export const guideSteps = pgTable('pk_guide_steps',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     guideId: uuid('guide_id')
@@ -1152,8 +1127,7 @@ export const guideSteps = pgTable(
   }),
 );
 
-export const guideCompletions = pgTable(
-  'guide_completions',
+export const guideCompletions = pgTable('pk_guide_completions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     guideId: uuid('guide_id')
@@ -1180,8 +1154,7 @@ export const guideCompletions = pgTable(
 // 10. INSTALL & EVENTS
 // ---------------------------------------------------------------------------
 
-export const installEvents = pgTable(
-  'install_events',
+export const installEvents = pgTable('pk_install_events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id')
@@ -1206,8 +1179,7 @@ export const installEvents = pgTable(
   }),
 );
 
-export const viewEvents = pgTable(
-  'view_events',
+export const viewEvents = pgTable('pk_view_events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -1230,8 +1202,7 @@ export const viewEvents = pgTable(
   }),
 );
 
-export const userActivity = pgTable(
-  'user_activity',
+export const userActivity = pgTable('pk_user_activity',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1251,8 +1222,7 @@ export const userActivity = pgTable(
 // 11. ALERTS & NOTIFICATIONS
 // ---------------------------------------------------------------------------
 
-export const alerts = pgTable(
-  'alerts',
+export const alerts = pgTable('pk_alerts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1286,8 +1256,7 @@ export const alerts = pgTable(
   }),
 );
 
-export const notifications = pgTable(
-  'notifications',
+export const notifications = pgTable('pk_notifications',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1315,8 +1284,7 @@ export const notifications = pgTable(
 // 12. CHANGE EVENTS
 // ---------------------------------------------------------------------------
 
-export const changeEvents = pgTable(
-  'change_events',
+export const changeEvents = pgTable('pk_change_events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }),
@@ -1342,8 +1310,7 @@ export const changeEvents = pgTable(
 // 13. GATEWAY
 // ---------------------------------------------------------------------------
 
-export const gatewaySecrets = pgTable(
-  'gateway_secrets',
+export const gatewaySecrets = pgTable('pk_gateway_secrets',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1370,8 +1337,7 @@ export const gatewaySecrets = pgTable(
   }),
 );
 
-export const gatewaySubscriptions = pgTable(
-  'gateway_subscriptions',
+export const gatewaySubscriptions = pgTable('pk_gateway_subscriptions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1397,8 +1363,7 @@ export const gatewaySubscriptions = pgTable(
   }),
 );
 
-export const gatewayInvocations = pgTable(
-  'gateway_invocations',
+export const gatewayInvocations = pgTable('pk_gateway_invocations',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1430,8 +1395,7 @@ export const gatewayInvocations = pgTable(
 // 14. SUBMISSIONS
 // ---------------------------------------------------------------------------
 
-export const submissions = pgTable(
-  'submissions',
+export const submissions = pgTable('pk_submissions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1460,8 +1424,7 @@ export const submissions = pgTable(
 // 15. SAVED SEARCHES & COMPARISONS
 // ---------------------------------------------------------------------------
 
-export const savedSearches = pgTable(
-  'saved_searches',
+export const savedSearches = pgTable('pk_saved_searches',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
@@ -1478,8 +1441,7 @@ export const savedSearches = pgTable(
   }),
 );
 
-export const comparisons = pgTable(
-  'comparisons',
+export const comparisons = pgTable('pk_comparisons',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),

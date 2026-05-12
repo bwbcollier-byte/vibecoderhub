@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { TOOLS } from '@/lib/seed/_configs';
+import { listResources } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
   description: 'AI-first IDEs and agent runtimes — Cursor, Claude Code, Windsurf.',
 };
 
-export default function Page(): ReactElement {
-  return <ResourceIndexPage items={TOOLS.items} config={TOOLS.config} />;
+export default async function Page(): Promise<ReactElement> {
+  const items = await listResources(TOOLS.config.typeId);
+  return <ResourceIndexPage items={items} config={TOOLS.config} />;
 }

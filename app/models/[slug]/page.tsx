@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
-import { listModels, getModelBySlug } from '@/lib/seed/models';
+import { listModels, getModelBySlug, listModelSlugs } from '@/lib/db/queries/models';
 
 import { ModelDetailTabs } from './_components/ModelDetailTabs';
 
@@ -24,7 +24,8 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return listModels().map((m) => ({ slug: m.slug }));
+  const slugs = await listModelSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata(
@@ -32,7 +33,7 @@ export async function generateMetadata(
   _parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const { slug } = await params;
-  const m = getModelBySlug(slug);
+  const m = await getModelBySlug(slug);
   if (!m) return { title: 'Model not found' };
   return {
     title: `${m.name} — ${m.provider}`,
@@ -48,10 +49,11 @@ function formatContext(n: number): string {
 
 export default async function ModelDetailPage({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const model = getModelBySlug(slug);
+  const model = await getModelBySlug(slug);
   if (!model) notFound();
 
-  const alternatives = listModels()
+  const allModels = await listModels();
+  const alternatives = allModels
     .filter((m) => m.slug !== model.slug)
     .slice(0, 4);
 
@@ -88,9 +90,16 @@ export default async function ModelDetailPage({ params }: PageProps): Promise<Re
                 <span className="font-mono uppercase tracking-[1.4px] text-[11px] text-text-secondary">
                   {model.provider}
                 </span>
-                <span className="font-mono uppercase tracking-[1.4px] text-[10px] text-text-secondary">
-                  Released {model.releasedAt} · cutoff {model.knowledgeCutoff}
-                </span>
+                {(model.releasedAt || model.knowledgeCutoff) && (
+                  <span className="font-mono uppercase tracking-[1.4px] text-[10px] text-text-secondary">
+                    {[
+                      model.releasedAt ? `Released ${model.releasedAt}` : null,
+                      model.knowledgeCutoff ? `cutoff ${model.knowledgeCutoff}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                )}
               </div>
             </div>
             <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(56px,9vw,112px)]">
@@ -113,22 +122,49 @@ export default async function ModelDetailPage({ params }: PageProps): Promise<Re
             aria-label="Key stats"
             className="grid grid-cols-2 md:grid-cols-4 gap-4 border-y border-surface py-6"
           >
-            <Stat label="INTELLIGENCE" value={`#${model.intelligenceIndex}`} hint="aggregated eval index" />
+            <Stat
+              label="INTELLIGENCE"
+              value={model.intelligenceIndex > 0 ? model.intelligenceIndex.toFixed(1) : '—'}
+              hint={model.intelligenceIndex > 0 ? 'aggregated eval index' : 'not yet ranked'}
+            />
             <Stat
               label="BLENDED COST"
-              value={`$${model.blendedCostPerMtok.toFixed(2)}`}
-              hint="per million tokens"
+              value={
+                model.blendedCostPerMtok > 0
+                  ? `$${model.blendedCostPerMtok.toFixed(2)}`
+                  : 'Free'
+              }
+              hint={
+                model.blendedCostPerMtok > 0
+                  ? 'per million tokens'
+                  : 'open weights · BYOH'
+              }
               accent
             />
             <Stat
               label="THROUGHPUT"
-              value={`${model.outputTokensPerSecond}`}
-              hint={`tok/s · ttft ${model.ttftMs}ms`}
+              value={
+                model.outputTokensPerSecond > 0 ? `${model.outputTokensPerSecond}` : '—'
+              }
+              hint={
+                model.outputTokensPerSecond > 0
+                  ? `tok/s${model.ttftMs > 0 ? ` · ttft ${model.ttftMs}ms` : ''}`
+                  : 'speed not measured'
+              }
             />
             <Stat
               label="CONTEXT"
-              value={formatContext(model.contextWindowAdvertised)}
-              hint={`effective ${formatContext(model.contextWindowEffective)}`}
+              value={
+                model.contextWindowAdvertised > 0
+                  ? formatContext(model.contextWindowAdvertised)
+                  : '—'
+              }
+              hint={
+                model.contextWindowEffective > 0 &&
+                model.contextWindowEffective !== model.contextWindowAdvertised
+                  ? `effective ${formatContext(model.contextWindowEffective)}`
+                  : undefined
+              }
             />
           </section>
 
@@ -168,7 +204,9 @@ export default async function ModelDetailPage({ params }: PageProps): Promise<Re
                   >
                     <span className="text-[13px] truncate">{alt.name}</span>
                     <span className="font-mono text-[10px] text-text-secondary tabular-nums shrink-0">
-                      ${alt.blendedCostPerMtok.toFixed(2)}
+                      {alt.blendedCostPerMtok > 0
+                        ? `$${alt.blendedCostPerMtok.toFixed(2)}`
+                        : 'Free'}
                     </span>
                   </Link>
                 </li>

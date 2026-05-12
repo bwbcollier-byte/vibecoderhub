@@ -11,20 +11,27 @@ const limiter = new RateLimiter(60, 60_000);
 
 interface RegistryServer {
   id?: string;
-  name: string;
+  name?: string;
+  title?: string;
   description?: string;
+  version?: string;
   repository?: { url?: string };
   homepage?: string;
-  version_detail?: { version?: string };
   packages?: Array<{ runtime?: string }>;
 }
 
-interface ListResponse {
-  servers: RegistryServer[];
-  next?: string;
+interface RegistryEntry {
+  server?: RegistryServer;
+  _meta?: Record<string, unknown>;
 }
 
-await withIngestionRun(
+interface ListResponse {
+  servers: RegistryEntry[];
+  metadata?: { nextCursor?: string; count?: number };
+}
+
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'mcp-official-registry', priority: 'high' },
   async (ctx) => {
     const all: RegistryServer[] = [];
@@ -38,8 +45,10 @@ await withIngestionRun(
       const resp = await fetchJson<ListResponse>(url, {
         headers: { 'user-agent': 'vibecoderhub-ingest/1' },
       });
-      all.push(...(resp.servers ?? []));
-      cursor = resp.next;
+      for (const entry of resp.servers ?? []) {
+        if (entry.server) all.push(entry.server);
+      }
+      cursor = resp.metadata?.nextCursor;
       pages += 1;
       if (pages > 50) break;
     } while (cursor);
@@ -48,19 +57,34 @@ await withIngestionRun(
     ctx.metadata.fetched = all.length;
     ctx.metadata.pages = pages;
 
+    // De-duplicate by canonical name — the registry returns every published version.
+    const latest = new Map<string, RegistryServer>();
     for (const srv of all) {
-      const slug = slugify(srv.name);
+      if (!srv.name) continue;
+      latest.set(srv.name, srv);
+    }
+
+    for (const srv of latest.values()) {
+      const name = srv.title || srv.name!;
+      const slug = slugify(srv.name!);
       await upsertResource(ctx, {
         typeSlug: 'mcp',
         slug,
-        name: srv.name,
+        name,
         tagline: srv.description?.slice(0, 200) ?? null,
         description: srv.description ?? null,
         sourceUrl: srv.repository?.url ?? null,
         homepageUrl: srv.homepage ?? null,
-        currentVersion: srv.version_detail?.version ?? null,
+        currentVersion: srv.version ?? null,
         isOfficial: true,
       }).catch(() => undefined);
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

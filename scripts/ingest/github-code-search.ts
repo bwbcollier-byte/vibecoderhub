@@ -43,7 +43,8 @@ const TARGETS: Array<{ q: string; type: Parameters<typeof upsertResource>[1]['ty
   { q: 'path:.claude/hooks extension:json', type: 'hook' },
 ];
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   {
     sourceSlug: 'github-code-search',
     priority: 'normal',
@@ -106,3 +107,10 @@ await withIngestionRun(
     ctx.metadata.mode = mode;
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

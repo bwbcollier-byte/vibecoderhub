@@ -13,7 +13,7 @@ import type { ReactElement } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
-import { listMcps, getMcpBySlug } from '@/lib/seed/mcps';
+import { listMcps, getMcpBySlug, listMcpSlugs } from '@/lib/db/queries/mcps';
 
 import { McpDetailTabs } from './_components/McpDetailTabs';
 
@@ -22,12 +22,13 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return listMcps().map((m) => ({ slug: m.slug }));
+  const slugs = await listMcpSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const m = getMcpBySlug(slug);
+  const m = await getMcpBySlug(slug);
   if (!m) return { title: 'MCP not found' };
   return {
     title: `${m.name} — ${m.author}`,
@@ -37,10 +38,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function McpDetailPage({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const mcp = getMcpBySlug(slug);
+  const mcp = await getMcpBySlug(slug);
   if (!mcp) notFound();
 
-  const alternatives = listMcps()
+  const allMcps = await listMcps();
+  const alternatives = allMcps
     .filter((m) => m.slug !== mcp.slug)
     .slice(0, 4);
 
@@ -50,8 +52,12 @@ export default async function McpDetailPage({ params }: PageProps): Promise<Reac
         <Link href="/mcps" className="hover:text-mint">
           MCPs
         </Link>
-        <span aria-hidden>/</span>
-        <span className="text-white">{mcp.author.toUpperCase()}</span>
+        {mcp.author && (
+          <>
+            <span aria-hidden>/</span>
+            <span className="text-white">{mcp.author.toUpperCase()}</span>
+          </>
+        )}
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
@@ -59,15 +65,21 @@ export default async function McpDetailPage({ params }: PageProps): Promise<Reac
           {/* Hero */}
           <header className="flex flex-col gap-4">
             <p className="font-mono uppercase tracking-[1.4px] text-[11px] font-bold text-mint">
-              ⌖ MCP · {mcp.author} · v{mcp.version} · {mcp.license}
+              {['⌖ MCP', mcp.author, mcp.version ? `v${mcp.version}` : null, mcp.license !== 'unknown' ? mcp.license : null]
+                .filter(Boolean)
+                .join(' · ')}
             </p>
             <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(56px,9vw,112px)]">
               {mcp.name}.
             </h1>
-            <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">{mcp.tagline}</p>
-            <p className="text-text-secondary text-[14px] leading-[1.6] max-w-prose">
-              {mcp.description}
-            </p>
+            {mcp.tagline && (
+              <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">{mcp.tagline}</p>
+            )}
+            {mcp.description && mcp.description.trim() !== mcp.tagline.trim() && (
+              <p className="text-text-secondary text-[14px] leading-[1.6] max-w-prose">
+                {mcp.description}
+              </p>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {mcp.compatibleClients.map((c) => (
                 <Badge key={c} tone="neutral" size="md">
@@ -87,8 +99,16 @@ export default async function McpDetailPage({ params }: PageProps): Promise<Reac
             <Stat label="PROMPTS" value={mcp.promptCount.toString()} hint="canned instructions" />
             <Stat
               label="USAGE"
-              value={`${(mcp.installCount7d / 1000).toFixed(1)}k/wk`}
-              hint={`★ ${mcp.ratingAvg.toFixed(1)} · ${mcp.updatedLabel}`}
+              value={
+                mcp.installCount7d > 0
+                  ? `${(mcp.installCount7d / 1000).toFixed(1)}k/wk`
+                  : '—'
+              }
+              hint={
+                mcp.ratingAvg > 0
+                  ? `★ ${mcp.ratingAvg.toFixed(1)} · ${mcp.updatedLabel}`
+                  : mcp.updatedLabel
+              }
             />
           </section>
 
@@ -126,9 +146,11 @@ export default async function McpDetailPage({ params }: PageProps): Promise<Reac
                     className="flex items-center justify-between gap-3 py-1.5 hover:text-mint"
                   >
                     <span className="text-[13px] truncate">{alt.name}</span>
-                    <span className="font-mono text-[10px] text-text-secondary tabular-nums shrink-0">
-                      {alt.toolCount} tools
-                    </span>
+                    {alt.toolCount > 0 && (
+                      <span className="font-mono text-[10px] text-text-secondary tabular-nums shrink-0">
+                        {alt.toolCount} tools
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}

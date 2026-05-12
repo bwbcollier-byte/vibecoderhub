@@ -103,10 +103,18 @@ export function GenericResourceCard({
           toneStyles.stat,
         )}
       >
-        <span>★ {r.ratingAvg.toFixed(1)}</span>
-        <span aria-hidden>·</span>
-        <span>{(r.installCount7d / 1000).toFixed(1)}k/wk</span>
-        <span aria-hidden>·</span>
+        {r.ratingAvg > 0 && (
+          <>
+            <span>★ {r.ratingAvg.toFixed(1)}</span>
+            <span aria-hidden>·</span>
+          </>
+        )}
+        {r.installCount7d > 0 && (
+          <>
+            <span>{(r.installCount7d / 1000).toFixed(1)}k/wk</span>
+            <span aria-hidden>·</span>
+          </>
+        )}
         <span>{r.updatedLabel}</span>
       </div>
 

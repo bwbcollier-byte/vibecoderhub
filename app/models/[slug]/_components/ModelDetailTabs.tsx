@@ -46,8 +46,8 @@ function Overview({ model }: Props): React.ReactElement {
               : 'Closed'
           }
         />
-        <Row label="Released" value={model.releasedAt} />
-        <Row label="Knowledge cutoff" value={model.knowledgeCutoff} />
+        <Row label="Released" value={model.releasedAt || '—'} />
+        <Row label="Knowledge cutoff" value={model.knowledgeCutoff || '—'} />
       </dl>
     </div>
   );
@@ -82,7 +82,7 @@ function Pricing({ model }: Props): React.ReactElement {
                   r.accent ? 'text-mint font-bold' : 'text-white'
                 }`}
               >
-                ${r.value.toFixed(2)} {r.suffix}
+                {r.value > 0 ? `$${r.value.toFixed(2)} ${r.suffix}` : 'Free'}
               </td>
             </tr>
           ))}
@@ -101,17 +101,34 @@ function Pricing({ model }: Props): React.ReactElement {
 function Performance({ model }: Props): React.ReactElement {
   return (
     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">
-      <Row label="Output speed" value={`${model.outputTokensPerSecond} tok/s`} />
-      <Row label="Time-to-first-token" value={`${model.ttftMs} ms`} />
+      <Row
+        label="Output speed"
+        value={model.outputTokensPerSecond > 0 ? `${model.outputTokensPerSecond} tok/s` : '—'}
+      />
+      <Row
+        label="Time-to-first-token"
+        value={model.ttftMs > 0 ? `${model.ttftMs} ms` : '—'}
+      />
       <Row
         label="Context (advertised)"
-        value={model.contextWindowAdvertised.toLocaleString()}
+        value={
+          model.contextWindowAdvertised > 0
+            ? model.contextWindowAdvertised.toLocaleString()
+            : '—'
+        }
       />
       <Row
         label="Context (effective)"
-        value={model.contextWindowEffective.toLocaleString()}
+        value={
+          model.contextWindowEffective > 0
+            ? model.contextWindowEffective.toLocaleString()
+            : '—'
+        }
       />
-      <Row label="Intelligence index" value={`#${model.intelligenceIndex}`} />
+      <Row
+        label="Intelligence index"
+        value={model.intelligenceIndex > 0 ? model.intelligenceIndex.toFixed(1) : '—'}
+      />
     </dl>
   );
 }

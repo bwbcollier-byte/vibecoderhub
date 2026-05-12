@@ -24,7 +24,8 @@ interface SmitheryResponse {
   pagination?: { totalPages?: number };
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'smithery', priority: 'normal', requiredEnv: ['SMITHERY_API_KEY'] },
   async (ctx) => {
     const apiKey = requireEnv('SMITHERY_API_KEY');
@@ -67,3 +68,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

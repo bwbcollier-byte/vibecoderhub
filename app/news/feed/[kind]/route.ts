@@ -1,7 +1,8 @@
 // Per-kind RSS — /news/feed/releases.rss, /news/feed/breaking.rss, etc.
 // 404s on unknown kinds.
 
-import { listNews, NEWS_KIND_LABELS, type NewsKind } from '@/lib/seed/news';
+import { listNews } from '@/lib/db/queries/news';
+import { NEWS_KIND_LABELS, type NewsKind } from '@/lib/seed/news';
 
 import { renderRssFeed } from '../../feed.rss/_render';
 
@@ -25,7 +26,8 @@ export async function GET(_req: Request, { params }: Params): Promise<Response> 
     return new Response('Unknown news kind', { status: 404 });
   }
 
-  const items = listNews().filter((n) => n.kind === kind);
+  const allItems = await listNews();
+  const items = allItems.filter((n) => n.kind === kind);
   const xml = renderRssFeed({
     title: `Vibe Coder Hub — ${NEWS_KIND_LABELS[kind]}`,
     description: `${NEWS_KIND_LABELS[kind]} news from Vibe Coder Hub.`,

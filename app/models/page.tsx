@@ -9,7 +9,7 @@
 
 import type { ReactElement } from 'react';
 
-import { listModels } from '@/lib/seed/models';
+import { listModels } from '@/lib/db/queries/models';
 
 import { ModelsList } from './_components/ModelsList';
 
@@ -19,8 +19,8 @@ export const metadata = {
     'Every frontier model ranked by intelligence, cost, speed, and context. Price drops surfaced live.',
 };
 
-export default function ModelsIndexPage(): ReactElement {
-  const models = listModels();
+export default async function ModelsIndexPage(): Promise<ReactElement> {
+  const models = await listModels();
 
   return (
     <div className="max-w-xxl mx-auto px-4 md:px-8 py-10 pb-20">

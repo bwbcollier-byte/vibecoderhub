@@ -17,7 +17,9 @@ import {
   RESOURCE_TYPE_GROUPS,
   getResourceType,
 } from '@/lib/resource-types';
-import { listModels } from '@/lib/seed/models';
+import { listModels } from '@/lib/db/queries/models';
+import { getSiteStats } from '@/lib/db/queries/stats';
+import { formatCount } from '@/lib/db/queries/_safe';
 
 export const metadata = {
   title: 'Vibe Coder Hub — every primitive a vibe coder needs',
@@ -25,13 +27,11 @@ export const metadata = {
     'One directory. One install. Components, MCPs, agents, models, deals — all queryable by IDE and stack.',
 };
 
-const STATS = [
-  { n: '12,407', l: 'RESOURCES INDEXED' },
-  { n: '47',     l: 'IDES & CLIENTS' },
-  { n: '120+',   l: 'MODELS TRACKED' },
-  { n: '$4.2M',  l: 'IN ACTIVE DEALS' },
-  { n: '218K',   l: 'INSTALLS / WEEK' },
-];
+function formatDealsValue(usd: number): string {
+  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (usd >= 1000) return `$${(usd / 1000).toFixed(0)}K`;
+  return `$${usd}`;
+}
 
 const PILLARS = [
   {
@@ -60,18 +60,32 @@ const PILLARS = [
   },
 ];
 
-export default function LandingPage(): ReactElement {
-  const topModels = listModels()
+export default async function LandingPage(): Promise<ReactElement> {
+  const [allModels, stats] = await Promise.all([listModels(), getSiteStats()]);
+  const topModels = allModels
     .slice()
     .sort((a, b) => b.intelligenceIndex - a.intelligenceIndex)
     .slice(0, 4);
+
+  const STATS = [
+    { n: formatCount(stats.totalResources), l: 'RESOURCES INDEXED' },
+    { n: '6', l: 'IDES & CLIENTS' },
+    { n: formatCount(stats.totalModels), l: 'MODELS TRACKED' },
+    { n: formatCount(stats.totalMcps), l: 'MCPS INDEXED' },
+    {
+      n: stats.activeDealsValueUsd > 0 ? formatDealsValue(stats.activeDealsValueUsd) : '—',
+      l: 'IN ACTIVE DEALS',
+    },
+  ];
+
+  const heroKickerCount = formatCount(stats.totalResources);
 
   return (
     <>
       {/* HERO */}
       <section className="px-4 md:px-8 pt-16 pb-6 max-w-xl mx-auto">
         <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-mint mb-4">
-          THE DIRECTORY · 12,407 RESOURCES · 47 IDES
+          THE DIRECTORY · {heroKickerCount} RESOURCES · 6 IDES
         </p>
         <h1 className="font-display uppercase text-white leading-[0.88] tracking-[0.5px] mb-6 text-[clamp(56px,11vw,152px)]">
           Every primitive

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { RULES } from '@/lib/seed/_configs';
+import { listResources } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
   description: 'Coding conventions enforced by the agent at completion time.',
 };
 
-export default function Page(): ReactElement {
-  return <ResourceIndexPage items={RULES.items} config={RULES.config} />;
+export default async function Page(): Promise<ReactElement> {
+  const items = await listResources(RULES.config.typeId);
+  return <ResourceIndexPage items={items} config={RULES.config} />;
 }

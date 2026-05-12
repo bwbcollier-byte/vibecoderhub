@@ -7,7 +7,7 @@
 import { withIngestionRun } from './_shared/runs';
 import { fetchText } from './_shared/retry';
 import { RateLimiter } from './_shared/rate-limiter';
-import { upsertResource } from './_shared/dedup';
+import { upsertNews } from './_shared/dedup';
 import { slugify } from './_shared/slug';
 
 const limiter = new RateLimiter(20, 60_000);
@@ -43,7 +43,8 @@ function parseAtom(xml: string): ArxivEntry[] {
   return out;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'arxiv-papers', priority: 'low' },
   async (ctx) => {
     await limiter.acquire();
@@ -57,16 +58,26 @@ await withIngestionRun(
     for (const e of entries) {
       const arxivId = e.id.split('/abs/')[1] ?? e.id;
       const slug = slugify(`arxiv-${arxivId}`);
-      await upsertResource(ctx, {
-        typeSlug: 'news',
+      const publishedAt = e.updated ? new Date(e.updated) : new Date();
+      await upsertNews(ctx, {
         slug,
-        name: e.title,
-        tagline: e.summary.slice(0, 200),
-        description: e.summary,
+        title: e.title,
+        summary: e.summary.slice(0, 500),
+        body: e.summary,
+        kind: 'ecosystem',
+        sourceKind: 'rss_imported',
+        sourceName: e.authors[0] ? `arXiv · ${e.authors[0]}` : 'arXiv',
         sourceUrl: e.id,
-        authorHandle: e.authors[0] ?? null,
-        stackTags: ['research', 'arxiv'],
+        publishedAt: Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+        topics: ['research', 'arxiv'],
       }).catch(() => undefined);
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

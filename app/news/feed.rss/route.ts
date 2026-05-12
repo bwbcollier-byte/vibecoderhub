@@ -3,7 +3,7 @@
 // /news/feed/[kind].rss is the generic generator; this one is the
 // 'all kinds' shortcut at the canonical path.
 
-import { listNews } from '@/lib/seed/news';
+import { listNews } from '@/lib/db/queries/news';
 
 import { renderRssFeed } from './_render';
 
@@ -11,8 +11,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 export const revalidate = 600; // 10 min
 
-export function GET(): Response {
-  const items = listNews();
+export async function GET(): Promise<Response> {
+  const items = await listNews();
   const xml = renderRssFeed({
     title: 'Vibe Coder Hub — News',
     description: 'Vibe-coding news, auto-generated and editorially curated.',

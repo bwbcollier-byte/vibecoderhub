@@ -5,7 +5,7 @@
 
 import type { ReactElement } from 'react';
 
-import { listMcps } from '@/lib/seed/mcps';
+import { listMcps } from '@/lib/db/queries/mcps';
 
 import { McpsList } from './_components/McpsList';
 
@@ -15,8 +15,8 @@ export const metadata = {
     'Browse every MCP server — tools, resources, and prompts your AI agent can call. Filtered by IDE compatibility.',
 };
 
-export default function McpsIndexPage(): ReactElement {
-  const mcps = listMcps();
+export default async function McpsIndexPage(): Promise<ReactElement> {
+  const mcps = await listMcps();
 
   return (
     <div className="max-w-xxl mx-auto px-4 md:px-8 py-10 pb-20">

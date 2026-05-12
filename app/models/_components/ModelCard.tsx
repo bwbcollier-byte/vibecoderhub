@@ -120,10 +120,12 @@ export function ModelCard({
       {/* Price headline */}
       <div className={cn('flex items-baseline gap-2 pb-3 mb-3 border-b', toneStyles.divider)}>
         <span className={cn('font-mono font-bold text-[20px] tabular-nums', toneStyles.priceColor)}>
-          ${model.blendedCostPerMtok.toFixed(2)}
+          {model.blendedCostPerMtok > 0
+            ? `$${model.blendedCostPerMtok.toFixed(model.blendedCostPerMtok < 1 ? 2 : 2)}`
+            : 'Free'}
         </span>
         <span className={cn('font-mono uppercase tracking-[1.4px] text-[9px]', toneStyles.priceLabel)}>
-          /MTOK BLENDED
+          {model.blendedCostPerMtok > 0 ? '/MTOK BLENDED' : 'OPEN WEIGHTS · BYOH'}
         </span>
         {model.priceDeltaPct < 0 && (
           <span
@@ -144,20 +146,35 @@ export function ModelCard({
           toneStyles.stat,
         )}
       >
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Intelligence</dt>
-          <dd>#{model.intelligenceIndex} intelligence</dd>
-        </div>
-        <span aria-hidden>·</span>
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Context window</dt>
-          <dd>{formatContext(model.contextWindowAdvertised)} ctx</dd>
-        </div>
-        <span aria-hidden>·</span>
-        <div className="flex items-center gap-1">
-          <dt className="sr-only">Speed</dt>
-          <dd>{model.outputTokensPerSecond} tok/s</dd>
-        </div>
+        {model.intelligenceIndex > 0 ? (
+          <>
+            <div className="flex items-center gap-1">
+              <dt className="sr-only">Intelligence</dt>
+              <dd>{model.intelligenceIndex.toFixed(1)} intelligence</dd>
+            </div>
+            <span aria-hidden>·</span>
+          </>
+        ) : null}
+        {model.contextWindowAdvertised > 0 ? (
+          <>
+            <div className="flex items-center gap-1">
+              <dt className="sr-only">Context window</dt>
+              <dd>{formatContext(model.contextWindowAdvertised)} ctx</dd>
+            </div>
+            <span aria-hidden>·</span>
+          </>
+        ) : null}
+        {model.outputTokensPerSecond > 0 ? (
+          <div className="flex items-center gap-1">
+            <dt className="sr-only">Speed</dt>
+            <dd>{model.outputTokensPerSecond} tok/s</dd>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-text-secondary">
+            <dt className="sr-only">Speed</dt>
+            <dd>speed —</dd>
+          </div>
+        )}
       </dl>
 
       {/* Tags */}

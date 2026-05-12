@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { ReactElement } from 'react';
 
-import { listGuides, variantToTile, GUIDE_KIND_LABELS, DIFFICULTY_LABELS } from '@/lib/seed/guides';
+import { listGuides } from '@/lib/db/queries/guides';
+import { variantToTile, GUIDE_KIND_LABELS, DIFFICULTY_LABELS } from '@/lib/seed/guides';
 
 export const metadata = {
   title: 'Guides · Vibe Coder Hub',
@@ -9,8 +10,8 @@ export const metadata = {
     'Step-by-step guides for installing, wiring, troubleshooting, and migrating across the vibe-coding stack.',
 };
 
-export default function GuidesIndexPage(): ReactElement {
-  const guides = listGuides();
+export default async function GuidesIndexPage(): Promise<ReactElement> {
+  const guides = await listGuides();
   return (
     <div className="max-w-xl mx-auto px-4 md:px-8 py-10 pb-20">
       <header className="mb-8">

@@ -4,7 +4,7 @@
 import { withIngestionRun } from './_shared/runs';
 import { fetchJson } from './_shared/retry';
 import { RateLimiter } from './_shared/rate-limiter';
-import { upsertResource } from './_shared/dedup';
+import { upsertNews } from './_shared/dedup';
 import { slugify } from './_shared/slug';
 
 const limiter = new RateLimiter(60, 60_000);
@@ -33,7 +33,8 @@ interface AlgoliaResp {
   hits: Hit[];
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'hn-algolia', priority: 'normal' },
   async (ctx) => {
     const all: Hit[] = [];
@@ -53,23 +54,36 @@ await withIngestionRun(
     await ctx.dump(all);
     ctx.metadata.items = all.length;
 
+    // De-duplicate by objectID — different queries return overlapping stories.
+    const seen = new Set<string>();
     for (const h of all) {
+      if (seen.has(h.objectID)) continue;
+      seen.add(h.objectID);
       const title = h.title ?? h.story_title;
       const url = h.url ?? h.story_url;
       if (!title || !url) continue;
       if ((h.points ?? 0) < 20) continue;
       const slug = slugify(`hn-${h.objectID}`);
-      await upsertResource(ctx, {
-        typeSlug: 'news',
+      const publishedAt = h.created_at ? new Date(h.created_at) : new Date();
+      await upsertNews(ctx, {
         slug,
-        name: title,
-        tagline: `${h.points ?? 0} points on Hacker News`,
-        description: title,
+        title,
+        summary: `${h.points ?? 0} points on Hacker News · by ${h.author}`,
+        body: title,
+        kind: 'ecosystem',
+        sourceKind: 'rss_imported',
+        sourceName: `Hacker News · ${h.author}`,
         sourceUrl: url,
-        homepageUrl: `https://news.ycombinator.com/item?id=${h.objectID}`,
-        authorHandle: h.author,
-        stackTags: ['hacker-news'],
+        publishedAt: Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+        topics: ['hacker-news'],
       }).catch(() => undefined);
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

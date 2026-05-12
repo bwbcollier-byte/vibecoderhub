@@ -1,23 +1,22 @@
 // Dynamic sitemap. Phase 1: marketing + indexable directory pages + every
-// seed-data detail page. Authed-only routes (/admin, /dashboard, /settings)
-// are intentionally absent — robots.ts disallows them too.
-//
-// Once Supabase is wired the seed-import sources flip to live DB queries.
-// Sitemap stays unchanged; entries just grow.
+// detail page sourced from the live query layer (with fallback to seed when
+// DB is unavailable — queries return [] gracefully).
 
 import type { MetadataRoute } from 'next';
 
-import { listModels } from '@/lib/seed/models';
-import { listMcps } from '@/lib/seed/mcps';
-import { listDeals } from '@/lib/seed/deals';
-import { listNews } from '@/lib/seed/news';
-import { listGuides } from '@/lib/seed/guides';
+import { listModelSlugs } from '@/lib/db/queries/models';
+import { listMcpSlugs } from '@/lib/db/queries/mcps';
+import { listDeals } from '@/lib/db/queries/deals';
+import { listNewsSlugs } from '@/lib/db/queries/news';
+import { listGuideSlugs } from '@/lib/db/queries/guides';
+import { listUseCaseSlugs } from '@/lib/db/queries/best-for';
+import { listResourceSlugs } from '@/lib/db/queries/resources';
 import * as Configs from '@/lib/seed/_configs';
 import type { GenericResource, GenericTypeConfig } from '@/lib/seed/generic';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPaths = [
@@ -29,25 +28,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: '/deals',     changeFrequency: 'weekly'  as const, priority: 0.7 },
     { url: '/news',      changeFrequency: 'hourly'  as const, priority: 0.7 },
     { url: '/guides',    changeFrequency: 'weekly'  as const, priority: 0.7 },
+    { url: '/best-for',  changeFrequency: 'weekly'  as const, priority: 0.7 },
     { url: '/pricing',   changeFrequency: 'monthly' as const, priority: 0.5 },
     { url: '/about',     changeFrequency: 'monthly' as const, priority: 0.3 },
     { url: '/terms',     changeFrequency: 'yearly'  as const, priority: 0.2 },
     { url: '/privacy',   changeFrequency: 'yearly'  as const, priority: 0.2 },
   ];
 
-  const modelDetailPaths = listModels().map((m) => ({
-    url: `/models/${m.slug}`,
+  const modelSlugs = await listModelSlugs();
+  const modelDetailPaths = modelSlugs.map((slug) => ({
+    url: `/models/${slug}`,
     changeFrequency: 'daily' as const,
     priority: 0.8,
   }));
 
-  const mcpDetailPaths = listMcps().map((m) => ({
-    url: `/mcps/${m.slug}`,
+  const mcpSlugs = await listMcpSlugs();
+  const mcpDetailPaths = mcpSlugs.map((slug) => ({
+    url: `/mcps/${slug}`,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
 
-  // Walk every generic-type bundle and emit index + detail URLs.
+  // Walk every generic-type bundle and emit index + detail URLs from queries.
   const genericPaths: Array<{ url: string; changeFrequency: 'weekly'; priority: number }> = [];
   for (const value of Object.values(Configs) as Array<{
     items: GenericResource[];
@@ -59,41 +61,52 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.7,
     });
-    for (const item of value.items) {
+    const slugs = await listResourceSlugs(value.config.typeId);
+    for (const slug of slugs) {
       genericPaths.push({
-        url: `/${value.config.basePath}/${item.slug}`,
+        url: `/${value.config.basePath}/${slug}`,
         changeFrequency: 'weekly',
         priority: 0.6,
       });
     }
   }
 
+  const deals = await listDeals();
   const dealsPaths = [
     { url: '/deals', changeFrequency: 'weekly' as const, priority: 0.7 },
-    ...listDeals().map((d) => ({
+    ...deals.map((d) => ({
       url: `/deals/${d.slug}`,
       changeFrequency: 'weekly' as const,
       priority: 0.5,
     })),
   ];
 
+  const newsSlugs = await listNewsSlugs();
   const newsPaths = [
     { url: '/news', changeFrequency: 'hourly' as const, priority: 0.7 },
-    ...listNews().map((n) => ({
-      url: `/news/${n.slug}`,
+    ...newsSlugs.map((slug) => ({
+      url: `/news/${slug}`,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     })),
   ];
 
+  const guideSlugs = await listGuideSlugs();
   const guidePaths = [
     { url: '/guides', changeFrequency: 'weekly' as const, priority: 0.7 },
-    ...listGuides().map((g) => ({
-      url: `/guides/${g.slug}`,
+    ...guideSlugs.map((slug) => ({
+      url: `/guides/${slug}`,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     })),
   ];
+
+  const useCaseSlugs = await listUseCaseSlugs();
+  const bestForPaths = useCaseSlugs.map((slug) => ({
+    url: `/best-for/${slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }));
 
   return [
     ...staticPaths,
@@ -103,6 +116,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...dealsPaths,
     ...newsPaths,
     ...guidePaths,
+    ...bestForPaths,
   ].map((entry) => ({
     ...entry,
     url: `${SITE_URL}${entry.url}`,

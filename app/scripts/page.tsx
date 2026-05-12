@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import { SCRIPTS } from '@/lib/seed/_configs';
+import { listResources } from '@/lib/db/queries/resources';
 import { ResourceIndexPage } from '@/components/resources/ResourceIndexPage';
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
   description: 'Repo-level scripts — bumpver, envsync, release-notes.',
 };
 
-export default function Page(): ReactElement {
-  return <ResourceIndexPage items={SCRIPTS.items} config={SCRIPTS.config} />;
+export default async function Page(): Promise<ReactElement> {
+  const items = await listResources(SCRIPTS.config.typeId);
+  return <ResourceIndexPage items={items} config={SCRIPTS.config} />;
 }

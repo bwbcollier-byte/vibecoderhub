@@ -3,7 +3,8 @@
 
 import type { ReactElement } from 'react';
 
-import { listDeals, totalDealValue } from '@/lib/seed/deals';
+import { listDeals } from '@/lib/db/queries/deals';
+import { totalDealValue } from '@/lib/seed/deals';
 
 import { DealsList } from './_components/DealsList';
 
@@ -18,8 +19,8 @@ function formatTotal(usd: number): string {
   return `$${(usd / 1_000).toFixed(0)}K+`;
 }
 
-export default function DealsIndexPage(): ReactElement {
-  const deals = listDeals();
+export default async function DealsIndexPage(): Promise<ReactElement> {
+  const deals = await listDeals();
   const total = totalDealValue();
 
   return (

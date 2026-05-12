@@ -41,7 +41,8 @@ function parseRss(xml: string): RssItem[] {
   return out;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'product-hunt-rss', priority: 'normal' },
   async (ctx) => {
     const all: RssItem[] = [];
@@ -73,3 +74,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

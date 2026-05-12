@@ -139,6 +139,17 @@ export default [
     },
   },
 
+  // ── Server-only query layer: allowed to import lib/server/* ───────────
+  // lib/db/queries/* is server-only by design (called from Server Components,
+  // Route Handlers, Server Actions). The no-restricted-imports rule's intent
+  // is to block client components — these files are not client-eligible.
+  {
+    files: ['lib/db/queries/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
   // ── Test files: relaxed rules ─────────────────────────────────────────
   {
     files: ['tests/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],

@@ -3,9 +3,8 @@
 
 import { ImageResponse } from 'next/og';
 
-import { getMcpBySlug, listMcps } from '@/lib/seed/mcps';
+import { getMcpBySlug, listMcpSlugs } from '@/lib/db/queries/mcps';
 
-export const runtime = 'edge';
 export const alt = 'MCP · Vibe Coder Hub';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -15,16 +14,17 @@ const MINT = '#3cffd0';
 const TEXT_META = '#949494';
 const SURFACE = '#2d2d2d';
 
-export function generateImageMetadata(): Array<{ id: string }> {
-  return listMcps().map((m) => ({ id: m.slug }));
+export async function generateImageMetadata(): Promise<Array<{ id: string }>> {
+  const slugs = await listMcpSlugs();
+  return slugs.map((slug) => ({ id: slug }));
 }
 
 interface Props {
   params: { slug: string };
 }
 
-export default function McpOg({ params }: Props): Response {
-  const mcp = getMcpBySlug(params.slug);
+export default async function McpOg({ params }: Props): Promise<Response> {
+  const mcp = await getMcpBySlug(params.slug);
   if (!mcp) {
     return new ImageResponse(
       <div style={{ background: CANVAS, color: '#fff', width: '100%', height: '100%' }} />,

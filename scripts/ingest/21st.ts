@@ -19,7 +19,8 @@ interface ComponentEntry {
   slug?: string;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: '21st-dev', priority: 'normal' },
   async (ctx) => {
     const sitemap = await fetchText('https://21st.dev/sitemap.xml', {
@@ -69,3 +70,10 @@ await withIngestionRun(
     await ctx.dump(collected);
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

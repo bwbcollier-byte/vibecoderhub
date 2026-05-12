@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 
 import { SKILLS } from '@/lib/seed/_configs';
+import { listResources, getResourceBySlug, listResourceSlugs } from '@/lib/db/queries/resources';
 import { DetailChassis } from '@/components/resources/DetailChassis';
 
 interface PageProps {
@@ -10,21 +11,23 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return SKILLS.items.map((m) => ({ slug: m.slug }));
+  const slugs = await listResourceSlugs(SKILLS.config.typeId);
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const m = SKILLS.items.find((x) => x.slug === slug);
+  const m = await getResourceBySlug(SKILLS.config.typeId, slug);
   if (!m) return { title: 'Skill not found' };
   return { title: `${m.name} — ${m.author}`, description: m.tagline };
 }
 
 export default async function Page({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const resource = SKILLS.items.find((m) => m.slug === slug);
+  const resource = await getResourceBySlug(SKILLS.config.typeId, slug);
   if (!resource) notFound();
-  const alternatives = SKILLS.items.filter((m) => m.slug !== resource.slug).slice(0, 4);
+  const all = await listResources(SKILLS.config.typeId);
+  const alternatives = all.filter((m) => m.slug !== resource.slug).slice(0, 4);
   return (
     <DetailChassis resource={resource} config={SKILLS.config} alternatives={alternatives} />
   );

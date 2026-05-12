@@ -10,35 +10,48 @@ import { slugify } from './_shared/slug';
 
 const limiter = new RateLimiter(30, 60_000);
 
-interface Plugin {
+interface MarketplacePlugin {
   name: string;
   description?: string;
-  repo?: string;
-  author?: string;
   version?: string;
-  skills?: Array<{ name: string; description?: string }>;
-  commands?: Array<{ name: string; description?: string }>;
-  hooks?: Array<{ name: string; description?: string }>;
-  subagents?: Array<{ name: string; description?: string }>;
+  author?: { name?: string; url?: string } | string;
+  repository?: string;
+  license?: string;
+  keywords?: string[];
+  category?: string;
+  source?: { type?: string; path?: string };
 }
 
-interface PluginsFile {
-  plugins: Plugin[];
+interface Marketplace {
+  name?: string;
+  version?: string;
+  plugins?: MarketplacePlugin[];
 }
 
-await withIngestionRun(
+function authorHandle(a: MarketplacePlugin['author']): string | null {
+  if (!a) return null;
+  if (typeof a === 'string') return a;
+  return a.name ?? null;
+}
+
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'buildwithclaude', priority: 'normal' },
   async (ctx) => {
     await limiter.acquire();
-    const data = await fetchJson<PluginsFile | Plugin[]>(
-      'https://raw.githubusercontent.com/davila7/claude-code-templates/main/cli-tool/components/plugins.json',
-    ).catch(() => ({ plugins: [] as Plugin[] }));
-    const plugins = Array.isArray(data) ? data : (data.plugins ?? []);
+    const data = await fetchJson<Marketplace>(
+      'https://raw.githubusercontent.com/davepoon/buildwithclaude/main/.claude-plugin/marketplace.json',
+    ).catch((err) => {
+      ctx.logger.warn('marketplace fetch failed', { err: String(err).slice(0, 200) });
+      return { plugins: [] as MarketplacePlugin[] };
+    });
+    const plugins = data.plugins ?? [];
 
-    await ctx.dump(plugins);
+    await ctx.dump(data);
     ctx.metadata.plugins = plugins.length;
 
     for (const p of plugins) {
+      if (!p.name) continue;
       const pluginSlug = slugify(p.name);
       await upsertResource(ctx, {
         typeSlug: 'plugin',
@@ -46,31 +59,18 @@ await withIngestionRun(
         name: p.name,
         tagline: p.description?.slice(0, 200) ?? null,
         description: p.description ?? null,
-        sourceUrl: p.repo ?? null,
+        sourceUrl: p.repository ?? null,
         currentVersion: p.version ?? null,
-        authorHandle: p.author ?? null,
-        stackTags: ['claude-code'],
+        authorHandle: authorHandle(p.author),
+        stackTags: ['claude-code', ...(p.keywords ?? []).slice(0, 6)],
       }).catch(() => undefined);
-
-      const bundles: Array<[Plugin['skills'], Parameters<typeof upsertResource>[1]['typeSlug']]> = [
-        [p.skills, 'skill'],
-        [p.commands, 'command'],
-        [p.hooks, 'hook'],
-        [p.subagents, 'subagent'],
-      ];
-      for (const [items, typeSlug] of bundles) {
-        for (const item of items ?? []) {
-          await upsertResource(ctx, {
-            typeSlug,
-            slug: slugify(`${p.name}-${item.name}`),
-            name: item.name,
-            tagline: item.description?.slice(0, 200) ?? null,
-            description: item.description ?? null,
-            sourceUrl: p.repo ?? null,
-            stackTags: ['claude-code', `bundled:${pluginSlug}`],
-          }).catch(() => undefined);
-        }
-      }
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

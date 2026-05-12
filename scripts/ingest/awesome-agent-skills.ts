@@ -31,7 +31,8 @@ function parseList(md: string): Entry[] {
   return entries;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'awesome-agent-skills', priority: 'normal' },
   async (ctx) => {
     await limiter.acquire();
@@ -54,3 +55,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

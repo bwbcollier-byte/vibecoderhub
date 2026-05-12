@@ -8,31 +8,28 @@ import type { ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
-import {
-  getNewsBySlug,
-  listNews,
-  variantToTile,
-  NEWS_KIND_LABELS,
-} from '@/lib/seed/news';
+import { getNewsBySlug, listNewsSlugs } from '@/lib/db/queries/news';
+import { variantToTile, NEWS_KIND_LABELS } from '@/lib/seed/news';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return listNews().map((n) => ({ slug: n.slug }));
+  const slugs = await listNewsSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const n = getNewsBySlug(slug);
+  const n = await getNewsBySlug(slug);
   if (!n) return { title: 'News not found' };
   return { title: `${n.headline} — Vibe Coder Hub`, description: n.summary };
 }
 
 export default async function NewsArticlePage({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const item = getNewsBySlug(slug);
+  const item = await getNewsBySlug(slug);
   if (!item) notFound();
 
   const isBreaking = item.kind === 'breaking';

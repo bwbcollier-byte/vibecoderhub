@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 
 import { EVALS } from '@/lib/seed/_configs';
+import { listResources, getResourceBySlug, listResourceSlugs } from '@/lib/db/queries/resources';
 import { DetailChassis } from '@/components/resources/DetailChassis';
 
 interface PageProps {
@@ -10,21 +11,23 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return EVALS.items.map((m) => ({ slug: m.slug }));
+  const slugs = await listResourceSlugs(EVALS.config.typeId);
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const m = EVALS.items.find((x) => x.slug === slug);
+  const m = await getResourceBySlug(EVALS.config.typeId, slug);
   if (!m) return { title: 'Eval not found' };
   return { title: `${m.name} — ${m.author}`, description: m.tagline };
 }
 
 export default async function Page({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const resource = EVALS.items.find((m) => m.slug === slug);
+  const resource = await getResourceBySlug(EVALS.config.typeId, slug);
   if (!resource) notFound();
-  const alternatives = EVALS.items.filter((m) => m.slug !== resource.slug).slice(0, 4);
+  const all = await listResources(EVALS.config.typeId);
+  const alternatives = all.filter((m) => m.slug !== resource.slug).slice(0, 4);
   return (
     <DetailChassis resource={resource} config={EVALS.config} alternatives={alternatives} />
   );

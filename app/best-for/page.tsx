@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 
-import { listBestForUseCases, bestForVariantToTile } from '@/lib/seed/best-for';
+import { listUseCases } from '@/lib/db/queries/best-for';
+import { bestForVariantToTile } from '@/lib/seed/best-for';
 
 export const metadata: Metadata = {
   title: 'Best for… · Vibe Coder Hub',
@@ -10,8 +11,8 @@ export const metadata: Metadata = {
     'Curated stack-rankings of the top AI models, MCPs, starters, and guides for every vibe-coding use case. Updated weekly.',
 };
 
-export default function BestForIndexPage(): ReactElement {
-  const useCases = listBestForUseCases();
+export default async function BestForIndexPage(): Promise<ReactElement> {
+  const useCases = await listUseCases();
   return (
     <div className="max-w-xl mx-auto px-4 md:px-8 py-10 pb-20">
       <header className="mb-8">

@@ -6,9 +6,8 @@
 
 import { ImageResponse } from 'next/og';
 
-import { getModelBySlug, listModels } from '@/lib/seed/models';
+import { getModelBySlug, listModelSlugs } from '@/lib/db/queries/models';
 
-export const runtime = 'edge';
 export const alt = 'Model · Vibe Coder Hub';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -19,8 +18,9 @@ const TEXT_META = '#949494';
 const SURFACE = '#2d2d2d';
 
 // Pre-render at build time for every seed slug.
-export function generateImageMetadata(): Array<{ id: string }> {
-  return listModels().map((m) => ({ id: m.slug }));
+export async function generateImageMetadata(): Promise<Array<{ id: string }>> {
+  const slugs = await listModelSlugs();
+  return slugs.map((slug) => ({ id: slug }));
 }
 
 interface Props {
@@ -33,8 +33,8 @@ function formatContext(n: number): string {
   return n.toLocaleString();
 }
 
-export default function ModelOg({ params }: Props): Response {
-  const model = getModelBySlug(params.slug);
+export default async function ModelOg({ params }: Props): Promise<Response> {
+  const model = await getModelBySlug(params.slug);
   if (!model) {
     return new ImageResponse(
       <div style={{ background: CANVAS, color: '#fff', width: '100%', height: '100%' }} />,

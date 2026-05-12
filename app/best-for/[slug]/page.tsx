@@ -3,11 +3,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 
-import {
-  listBestForUseCases,
-  getBestForBySlug,
-  bestForVariantToTile,
-} from '@/lib/seed/best-for';
+import { getBestForBySlug, listUseCaseSlugs } from '@/lib/db/queries/best-for';
+import { bestForVariantToTile } from '@/lib/seed/best-for';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -17,12 +14,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 const TOTAL_SLOTS = 10;
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return listBestForUseCases().map((u) => ({ slug: u.slug }));
+  const slugs = await listUseCaseSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const uc = getBestForBySlug(slug);
+  const uc = await getBestForBySlug(slug);
   if (!uc) return { title: 'Not found · Vibe Coder Hub' };
   return {
     title: `Best for ${uc.title} · Vibe Coder Hub`,
@@ -32,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BestForPage({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const useCase = getBestForBySlug(slug);
+  const useCase = await getBestForBySlug(slug);
   if (!useCase) notFound();
 
   const tile = bestForVariantToTile(useCase.variant);

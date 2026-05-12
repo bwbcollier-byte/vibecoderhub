@@ -28,7 +28,8 @@ interface ShadcnEntry {
   files?: Array<{ path: string }>;
 }
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   { sourceSlug: 'shadcn', priority: 'normal' },
   async (ctx) => {
     const collected: ShadcnEntry[] = [];
@@ -58,3 +59,10 @@ await withIngestionRun(
     ctx.metadata.fetched = collected.length;
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

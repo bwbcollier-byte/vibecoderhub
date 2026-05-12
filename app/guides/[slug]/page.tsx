@@ -5,12 +5,8 @@ import type { ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
-import {
-  getGuideBySlug,
-  listGuides,
-  GUIDE_KIND_LABELS,
-  DIFFICULTY_LABELS,
-} from '@/lib/seed/guides';
+import { getGuideBySlug, listGuideSlugs } from '@/lib/db/queries/guides';
+import { GUIDE_KIND_LABELS, DIFFICULTY_LABELS } from '@/lib/seed/guides';
 
 import { GuideStepper } from './_components/GuideStepper';
 
@@ -19,19 +15,20 @@ interface PageProps {
 }
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return listGuides().map((g) => ({ slug: g.slug }));
+  const slugs = await listGuideSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const g = getGuideBySlug(slug);
+  const g = await getGuideBySlug(slug);
   if (!g) return { title: 'Guide not found' };
   return { title: `${g.title} — Vibe Coder Hub`, description: g.description };
 }
 
 export default async function GuidePage({ params }: PageProps): Promise<ReactElement> {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const guide = await getGuideBySlug(slug);
   if (!guide) notFound();
 
   return (

@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/icons/Icon';
-import { listNews } from '@/lib/seed/news';
+import { listNews } from '@/lib/db/queries/news';
 
 import { NewsList } from './_components/NewsList';
 
@@ -12,8 +12,8 @@ export const metadata = {
     'Vibe-coding news, auto-generated and editorially curated. Breaking model price changes, IDE releases, ecosystem moves.',
 };
 
-export default function NewsIndexPage(): ReactElement {
-  const items = listNews();
+export default async function NewsIndexPage(): Promise<ReactElement> {
+  const items = await listNews();
   return (
     <div className="max-w-xl mx-auto px-4 md:px-8 py-10 pb-20">
       <header className="flex items-end justify-between flex-wrap gap-4 mb-8">

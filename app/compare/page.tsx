@@ -25,7 +25,7 @@ export default async function ComparePage({
 
   const truncated = rawIds.length > MAX_ITEMS;
   const limitedIds = rawIds.slice(0, MAX_ITEMS);
-  const items = resolveCompareIds(limitedIds);
+  const items = await resolveCompareIds(limitedIds);
 
   if (items.length === 0) {
     return (

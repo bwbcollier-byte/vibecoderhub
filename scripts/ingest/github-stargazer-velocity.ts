@@ -35,7 +35,8 @@ const TOPICS = [
   'ai-coding',
 ];
 
-await withIngestionRun(
+async function main() {
+  await withIngestionRun(
   {
     sourceSlug: 'github-stargazer-velocity',
     priority: 'low',
@@ -89,3 +90,10 @@ await withIngestionRun(
     }
   },
 );
+
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -6,6 +6,112 @@
 
 ---
 
+## Current state — end of Session 16 — **INGESTION REPAIRED + REAL-DATA POLISH SHIPPED**
+
+**Session phase:** Ingestion script repair + visual polish on real-data pages. All pages now render real DB data without "0.0", "—", or hardcoded numbers.
+
+**Live inventory at session end** (deployed Supabase):
+- pk_resources (published): **1,255 total** — mcp 695, model 365, plugin 146, component 47, skill 2
+- pk_news: **168 rows** — 118 from Hacker News, 50 from arXiv
+
+**Session 16 summary**
+
+### Task 1 — fix four broken ingestion scripts
+
+- ✓ **arxiv-papers.ts** — was inserting `pk_resources` with `type_slug='news'`, which isn't a valid `resource_type` enum value (news has its own table). Rewired to `upsertNews()` (new helper, see below). `kind='ecosystem'`, `source_kind='rss_imported'`, `source_name='arXiv · <author>'`. Result: **50 inserted**.
+- ✓ **hn-algolia.ts** — same enum bug. Rewired to `upsertNews()`. Added de-dup by `objectID` (different keyword queries return overlapping stories). Result: **118 inserted**.
+- ✓ **awesome-claude-plugins.ts** — pointed at the wrong repo (`hesreallyhim/awesome-claude-code`, README in transition with no list). Switched to `quemsah/awesome-claude-plugins` and rewrote the parser: README is a Markdown table (`| # | [name](url) | description | stars | subs | plugins |`), not a bullet list. New regex matches table rows. Result: **90 inserted, 9 updated**.
+- ✓ **buildwithclaude.ts** — was hitting a stale `plugins.json` URL on a fork. Switched to the canonical `davepoon/buildwithclaude` `.claude-plugin/marketplace.json`. New shape mapping: `name`, `description`, `version`, `author{name,url}`, `repository`, `keywords`. Result: **56 inserted, 1 updated**.
+- ✓ **New helper `upsertNews()`** in `scripts/ingest/_shared/dedup.ts` — idempotent on `pk_news.slug`, handles publishedAt + topics + sourceKind. Sits beside `upsertResource()` so future news sources have a clean entry point.
+- ✓ **Promotions** — bulk SQL: `update pk_resources set status='published', published_at=now() where status='draft'` → 146 plugin drafts promoted. (`pk_news` has no `status` column; news is published-on-insert.)
+- ✓ **Backfilled empty `pk_plugins` rows** for the 146 new plugins so the inner-join in `listResources('plugin')` resolves.
+
+### Task 2 — visual polish pass on real-data pages
+
+- ✓ **Home `/` — live stats.** Hardcoded `STATS = [{n:'12,407', ...}, {n:'120+', ...}, {n:'$4.2M', ...}, {n:'218K', ...}]` replaced by live counts via new `getSiteStats()` query (`lib/db/queries/stats.ts`). Strip now reads: 1,255 RESOURCES INDEXED · 6 IDES & CLIENTS · 365 MODELS TRACKED · 695 MCPS INDEXED · — IN ACTIVE DEALS. Hero kicker also uses live count. New `formatCount()` helper handles 1K/100K thresholds.
+- ✓ **`/models` cards (`ModelCard.tsx`)** — `$0.00 /MTOK BLENDED` for free models now renders **"Free · OPEN WEIGHTS · BYOH"**. `#0 intelligence` and `0 tok/s` (null source data) hide cleanly when value is 0; speed shows "speed —" instead of "0 tok/s".
+- ✓ **`/models` sort fallback (`lib/db/queries/models.ts`)** — default `intelligence` sort cascades to `published_at desc` because OpenRouter doesn't supply intelligence_index yet. All sorts use `nulls last` so frontier paid models surface first under cost/speed/context filters too.
+- ✓ **`/models/[slug]` detail** — INTELLIGENCE / THROUGHPUT / CONTEXT stat tiles show "—" with hint copy "not yet ranked" / "speed not measured" when null. BLENDED COST tile flips to "Free · open weights · BYOH". Released/cutoff line in the provider header is hidden when both empty (was rendering "RELEASED · CUTOFF" with no values). Pricing tab shows "Free" for $0 rows; performance tab uses "—" for null fields. Alternatives sidebar shows "Free" instead of "$0.00".
+- ✓ **`/mcps` cards (`McpCard.tsx`)** — entire `Tools/Resources/Prompts` stat strip hidden when all zero (was rendering "0 tools · 0 resources · 0 prompts" on every card). Rating + installs only render when > 0; falls back to just `updatedLabel`.
+- ✓ **`/mcps/[slug]` detail** — header kicker (`⌖ MCP · author · v… · license`) joins non-empty parts with `·` (was rendering "⌖ MCP · · V1.1.0 · UNKNOWN" with empty author). Author breadcrumb chip hidden when missing. Tagline + description deduplicated when one is a prefix of the other. Stats row shows "—" for zero usage. Alternatives sidebar hides "0 tools" trailing label.
+- ✓ **Generic `/<plural>` cards (`GenericResourceCard.tsx`)** — same rating/installs tightening; covers all 24 generic resource types (plugins, components, skills, …).
+- ✓ **`/compare`** — `app/compare/_lib/resolve.ts` was still walking the seed bundles, so live model/MCP/plugin IDs returned EmptyState. Rewrote to `async resolveCompareIds()` calling `getModelBySlug` / `getMcpBySlug` / `getResourceBySlug` from the live query layer. Tested with 3 real ids (2 models + 1 MCP) — all three resolve and render.
+- ✓ **Mobile (375px)** sweep on `/models` and `/mcps` — no horizontal overflow, cards collapse to single column cleanly.
+
+### Quality gates
+
+`pnpm typecheck` ✓ · `pnpm lint` ✓ (one stale `desc` import removed mid-session) · `pnpm build` ✓.
+
+### Outstanding issues / deferred
+
+- **Smithery ingest** still skipped — needs `SMITHERY_API_KEY` env var.
+- **Pagination** — index pages still capped at 200 (default `limit` in query layer). Need a "Load more" or `?page=` param to surface the rest of the 695 MCPs.
+- **Intelligence index / throughput / TTFT** for OpenRouter models all null — these come from a future Artificial Analysis ingest. Polish handles the empty state; the data needs a separate source.
+- **MCP names like `ai.buyersense/buyersense`** — registry returns canonical id format, not display title. Could add a prettifier (`capitalize-after-last-slash`) in the query layer for friendlier display.
+- **arXiv rate-limit** — hit 429 when run in parallel with HN/awesome/buildwithclaude. Solo retry succeeded after ~15 min cooldown. Production cron should serialise high-volume sources or add jitter.
+
+---
+
+## Current state — end of Session 15 — **WIRED TO REAL SUPABASE (queries pending DB password)**
+
+**Session phase:** Real-credential bring-up. Schema renamed, query layer built, every fetching page swapped from seed to live DB.
+
+**Session 15 summary** — Connect Supabase + live data. One-shot session.
+
+- ✓ **Drizzle schema rename** — every `pgTable('foo', ...)` in `db/schema.ts` is now `pgTable('pk_foo', ...)`. All 61 tables. JS export names (e.g. `profiles`, `resources`, `models`) stay the same — only the SQL table-name string changes, so `references(() => profiles.id)` callbacks and every page-side import are untouched.
+- ✓ **Enums verified** — `db/enums.ts` keeps original enum names (`resource_type`, `news_kind`, etc.) per spec. No changes.
+- ✓ **Relations verified** — `db/relations.ts` references the JS exports, not the SQL names; no changes needed.
+- ✓ **Query layer at `lib/db/queries/`** — 9 modules, all server-only:
+  - `_safe.ts` — `safeQuery(fn, fallback)` wrapper. DB unreachable / network blip / RLS denial → logged once at warn, fallback returned. Means pages never crash on a dead DB.
+  - `models.ts` — `listModels({sort, openOnly, limit, offset})`, `getModelBySlug`, `getModelCount`, `listModelSlugs`. Re-exports `sortModels` / `filterModels` from seed.
+  - `mcps.ts` — `listMcps({sort, limit, offset})`, `getMcpBySlug`, `listMcpSlugs`. Re-exports `sortMcps` / `filterMcps`.
+  - `resources.ts` — `listResources(typeId, args)`, `getResourceBySlug`, `listResourceSlugs`. Generic; consumed by all 24 type pages via the shared `_configs` bundle.
+  - `deals.ts` — `listDeals({tier, category, sort, limit})`.
+  - `news.ts` — `listNews({kind, ...})`, `getNewsBySlug`, `listNewsSlugs`. Maps the seed-side kind labels (`breaking|releases|...|price`) to the DB enum (`ecosystem|release|price_change|tutorial|op_ed`); `is_breaking=true` rows project back to `breaking`.
+  - `guides.ts` — `listGuides`, `getGuideBySlug` (joins steps), `listGuideSlugs`.
+  - `best-for.ts` — `listUseCases`, `getBestForBySlug` (joins ranked picks via `pk_best_for`), `listUseCaseSlugs`.
+  - `search.ts` — `searchResources(q, type?, limit)` using `websearch_to_tsquery` + `ts_rank` against the `search_vector` column.
+  - `profiles.ts` — `ensureProfile({id, githubHandle, email, displayName, avatarUrl})`. Idempotent upsert via `onConflictDoNothing`. Username derived from githubHandle / email-local-part / `user_<id8>` fallback.
+- ✓ **Pages swapped from seed → live queries** (~60 file edits, delegated to subagent):
+  - `app/page.tsx` (landing teaser), `app/sitemap.ts` (now async; sources slugs from query layer for every type)
+  - `app/models/page.tsx`, `[slug]/page.tsx`, `[slug]/opengraph-image.tsx`
+  - `app/mcps/page.tsx`, `[slug]/page.tsx`, `[slug]/opengraph-image.tsx`
+  - `app/deals/page.tsx`, `app/news/page.tsx`, `[slug]/page.tsx`, `feed.rss/route.ts`, `feed/[kind]/route.ts`
+  - `app/guides/page.tsx`, `[slug]/page.tsx`, `app/best-for/page.tsx`, `[slug]/page.tsx`
+  - All 24 generic resource type pages (`app/<plural>/page.tsx` + `[slug]/page.tsx`)
+  - Type defs and helpers stay in `lib/seed/*` — Client Components (`_components/*`) still import types from there, so seed remains the canonical type source + a fallback library if we want to flip back.
+- ✓ **Auth profile creation** — `app/auth/callback/route.ts` now calls `ensureProfile()` after successful code exchange, deriving fields from `session.user.user_metadata` (GitHub OAuth: `user_name`, `full_name`, `avatar_url`).
+- ✓ **OG images moved off Edge runtime** (model + MCP). Once they import the query layer (which transitively imports `postgres`, Node-only), they can't run on Edge. They render on Node now — slower per-request, still functional. Alternative if Edge OG matters: add a slug-only edge-safe query path.
+- ✓ **`.env.local` gap-fill** — added `DATABASE_URL_POOLED` (env.ts requires this name; the user's prompt used `DATABASE_URL`), plus 5 missing required keys (`NEXT_PUBLIC_SITE_URL`, `STRIPE_PRICE_ID_PRO_YEARLY`, `REPLICATE_API_TOKEN`, `GITHUB_INGESTION_TOKEN`, `POSTHOG_API_KEY`) as `_dummy` so build env validation passes. Real Supabase project URL / anon key / service-role key are populated. **DB password is still the placeholder `YOUR_DB_PASSWORD_HERE`** — every live query currently hits `safeQuery`, logs once, and returns empty.
+
+**Quality gates at end of Session 15:** typecheck ✓, lint ✓, build ✓ (~81 routes; previously-SSG type detail pages now `ƒ Dynamic` because they await DB).
+
+**Visible-in-browser effect right now (placeholder password):**
+- Every type-page index renders the hero + its EmptyState (the page no longer crashes; the query just returned `[]`).
+- `/best-for/<slug>` for the seeded use cases will show empty pick lists until the DB password lands AND `pk_best_for` rows exist.
+- Auth modal still opens for GitHub OAuth, but the round-trip will fail at code-exchange against the real Supabase project until DB / RLS is reachable.
+
+**Deferred from this session — explicit and intentional:**
+- **Bookmarks DB swap.** The cookie-backed `BookmarksProvider` still owns reads + writes. Wiring to `pk_bookmarks` requires a structural shift to Server Actions + a server-fed initial state — not a one-line swap. Plan: do this once auth round-trip is verified, since DB bookmarks need a real `userId`.
+- **Cmd-K live search.** Still uses `buildIndex()` over seed entries. Swap target: `searchResources()` (already built in `lib/db/queries/search.ts`). The existing client component needs a debounced fetch instead of in-memory filter — pattern change, not a one-line swap.
+
+## Next session pickup (Session 16)
+
+**Required from Ben before Session 16 can verify anything end-to-end:**
+1. Set the real DB password in `.env.local` — replace both `YOUR_DB_PASSWORD_HERE` instances. Get from Supabase → Settings → Database → "Connection string" reveal.
+2. Confirm `pk_use_cases` is the only seeded table (12 rows) so we know what "expected empty" looks like for everything else.
+
+**Once password lands, the order of operations:**
+1. `tsx -e "import('./lib/server/db').then(({db}) => import('./db/schema').then(({useCases: pk_use_cases}) => db.select().from(pk_use_cases).limit(5).then(console.log)))"` — confirm DB reachable, prints 12 use cases.
+2. `pnpm ingest:openrouter` — populate `pk_resources` (type=model) + `pk_models` + `pk_model_providers` + `pk_model_price_history`. Verify in Supabase Table Editor.
+3. `pnpm dev` and load `/models` — should show real OpenRouter models, no longer EmptyState.
+4. Auth round-trip: sign in with GitHub → check `pk_profiles` for the new row.
+5. Wire bookmarks to DB (swap `BookmarksProvider` to Server Actions + server-fed initial items; keep cookie path for anonymous users).
+6. Wire Cmd-K to `searchResources()` (debounced fetch, replace `buildIndex()`).
+7. Run remaining ingestion scripts as their source data is needed.
+
+---
+
 ## Current state — end of Session 14 — **PHASE D COMPLETE · READY FOR LAUNCH REVIEW**
 
 **Session phase:** Phase D done. The Cowork build loop ends here. Next step is real-credential provisioning + a launch checklist run, not more Phase-C feature work.
