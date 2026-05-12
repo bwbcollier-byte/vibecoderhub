@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { Icon } from '@/components/icons/Icon';
-import { getSupabaseBrowserClient } from '@/lib/auth/client';
+import { getSupabaseBrowserClient, useSession } from '@/lib/auth/client';
 
 export type AuthMode = 'signin' | 'signup';
 
@@ -42,6 +42,15 @@ export function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProps): Reac
     setError(message);
     toast.error('Sign-in failed — try again', { duration: 8000 });
   }, []);
+
+  // Auto-close once a session lands. The OAuth path navigates the whole tab
+  // (so this never fires there) but the magic-link path completes in another
+  // tab, and a cross-tab session change also triggers `useSession` here. When
+  // the user appears, drop the modal so the now-signed-in chrome takes over.
+  const { user } = useSession();
+  React.useEffect(() => {
+    if (user) onClose();
+  }, [user, onClose]);
 
   const signInGoogle = async (): Promise<void> => {
     setError(null);

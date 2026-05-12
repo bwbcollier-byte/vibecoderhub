@@ -62,14 +62,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading || undefined}
         {...props}
       >
-        {loading ? (
-          <span className="inline-flex items-center gap-2">
-            <Spinner />
-            <span>{children}</span>
-          </span>
-        ) : (
-          children
-        )}
+        {/* Spinner trails the children so leading icons (e.g. Google/GitHub
+            logos in AuthModal) keep their position — pattern reads as
+            `[logo] Continue with X [spinner]` rather than the spinner
+            shoving the logo over and looking broken. */}
+        {children}
+        {loading && <Spinner />}
       </button>
     );
   },

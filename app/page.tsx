@@ -21,6 +21,7 @@ import { listModels } from '@/lib/db/queries/models';
 import { getSiteStats, getResourceCountsByType } from '@/lib/db/queries/stats';
 import { formatCount } from '@/lib/db/queries/_safe';
 import { ProviderLogo } from '@/components/icons/ProviderLogos/ProviderLogo';
+import { HeroSignUpCta } from './_components/HeroCta';
 
 export const metadata = {
   title: 'Vibe Coder Hub — every primitive a vibe coder needs',
@@ -102,9 +103,7 @@ export default async function LandingPage(): Promise<ReactElement> {
           — all queryable by IDE and stack.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button size="lg" variant="primary">
-            Sign up free →
-          </Button>
+          <HeroSignUpCta />
           <Link href="/models">
             <Button size="lg" variant="secondary">
               Browse anonymously
