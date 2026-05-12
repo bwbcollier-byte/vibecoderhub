@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import { Icon } from '@/components/icons/Icon';
+import { ProviderLogo } from '@/components/icons/ProviderLogos/ProviderLogo';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shadcn/cn';
 import type { ModelDetail } from '@/lib/seed/models';
@@ -33,13 +34,6 @@ export function ModelCard({
   tone = 'dark',
   ribbon,
 }: ModelCardProps): React.ReactElement {
-  const initials = model.provider
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
   // Tone tokens — drive card bg + body text + divider line. Mint/UV invert the
   // dark-on-light layout; dark is the default surface card.
   const toneStyles = {
@@ -95,13 +89,11 @@ export function ModelCard({
       )}
       {/* Header: provider mark + name */}
       <Link href={`/models/${model.slug}`} className="flex items-center gap-3 mb-4">
-        <span
-          aria-hidden
-          className="inline-flex items-center justify-center w-8 h-8 rounded-sm font-mono font-bold text-[11px] text-black tracking-[0.5px] shrink-0"
-          style={{ background: model.providerColor }}
-        >
-          {initials}
-        </span>
+        <ProviderLogo
+          provider={model.provider}
+          size={32}
+          fallbackColor={model.providerColor}
+        />
         <div className="flex flex-col min-w-0">
           <span className={cn('font-mono uppercase tracking-[1.4px] text-[10px]', toneStyles.kicker)}>
             {model.provider}

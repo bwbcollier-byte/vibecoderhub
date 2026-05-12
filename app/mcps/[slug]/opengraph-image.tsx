@@ -3,7 +3,7 @@
 
 import { ImageResponse } from 'next/og';
 
-import { getMcpBySlug, listMcpSlugs } from '@/lib/db/queries/mcps';
+import { getMcpBySlug } from '@/lib/db/queries/mcps';
 
 export const alt = 'MCP · Vibe Coder Hub';
 export const size = { width: 1200, height: 630 };
@@ -14,10 +14,8 @@ const MINT = '#3cffd0';
 const TEXT_META = '#949494';
 const SURFACE = '#2d2d2d';
 
-export async function generateImageMetadata(): Promise<Array<{ id: string }>> {
-  const slugs = await listMcpSlugs();
-  return slugs.map((slug) => ({ id: slug }));
-}
+// See note in app/models/[slug]/opengraph-image.tsx — omitting
+// generateImageMetadata avoids the multiplicative og:image meta-tag bug.
 
 interface Props {
   params: { slug: string };

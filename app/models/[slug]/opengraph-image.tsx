@@ -6,7 +6,7 @@
 
 import { ImageResponse } from 'next/og';
 
-import { getModelBySlug, listModelSlugs } from '@/lib/db/queries/models';
+import { getModelBySlug } from '@/lib/db/queries/models';
 
 export const alt = 'Model · Vibe Coder Hub';
 export const size = { width: 1200, height: 630 };
@@ -17,11 +17,11 @@ const MINT = '#3cffd0';
 const TEXT_META = '#949494';
 const SURFACE = '#2d2d2d';
 
-// Pre-render at build time for every seed slug.
-export async function generateImageMetadata(): Promise<Array<{ id: string }>> {
-  const slugs = await listModelSlugs();
-  return slugs.map((slug) => ({ id: slug }));
-}
+// NOTE: do NOT export `generateImageMetadata`. With a dynamic [slug] segment,
+// returning a slug list there causes Next to emit one og:image tag per known
+// slug on every page (365 model pages × 365 OG slugs → meta-spam + multiplied
+// build-time work). Omitting it lets Next render exactly one OG per page,
+// keyed off the page's own params.
 
 interface Props {
   params: { slug: string };

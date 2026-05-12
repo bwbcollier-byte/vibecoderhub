@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import { Icon } from '@/components/icons/Icon';
 import { Badge } from '@/components/ui/badge';
+import { iconForResourceType } from '@/lib/resource-type-icons';
 import { cn } from '@/lib/shadcn/cn';
 import type { GenericResource, GenericTypeConfig } from '@/lib/seed/generic';
 
@@ -81,9 +82,18 @@ export function GenericResourceCard({
 
       <Link href={`/${config.basePath}/${r.slug}`} className="flex flex-col gap-1 mb-3">
         <span
-          className={cn('font-mono uppercase tracking-[1.4px] text-[10px]', toneStyles.kicker)}
+          className={cn(
+            'inline-flex items-center gap-1.5 font-mono uppercase tracking-[1.4px] text-[10px]',
+            toneStyles.kicker,
+          )}
         >
-          {config.glyph} {config.singular.toUpperCase()} · {r.author}
+          {(() => {
+            const TypeIcon = iconForResourceType(config.typeId);
+            return <TypeIcon size={14} />;
+          })()}
+          <span>
+            {config.singular.toUpperCase()} · {r.author}
+          </span>
         </span>
         <span
           className={cn(

@@ -7,6 +7,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/server/db';
 import { resources, news, deals } from '@/db/schema';
+import type { ResourceTypeId } from '@/lib/resource-types';
 
 import { safeQuery } from './_safe';
 
@@ -69,4 +70,21 @@ export async function getSiteStats(): Promise<SiteStats> {
     totalNews: 0,
     activeDealsValueUsd: 0,
   });
+}
+
+/** Per-type published-count map. Cheap — covered by `resources_type_idx`. */
+export async function getResourceCountsByType(): Promise<Record<ResourceTypeId, number>> {
+  return safeQuery(async () => {
+    const rows = await db
+      .select({
+        type: resources.typeSlug,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(resources)
+      .where(and(eq(resources.status, 'published'), isNull(resources.deletedAt)))
+      .groupBy(resources.typeSlug);
+    const out = {} as Record<ResourceTypeId, number>;
+    for (const r of rows) out[r.type as ResourceTypeId] = r.n;
+    return out;
+  }, {} as Record<ResourceTypeId, number>);
 }

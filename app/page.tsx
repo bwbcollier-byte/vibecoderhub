@@ -18,8 +18,9 @@ import {
   getResourceType,
 } from '@/lib/resource-types';
 import { listModels } from '@/lib/db/queries/models';
-import { getSiteStats } from '@/lib/db/queries/stats';
+import { getSiteStats, getResourceCountsByType } from '@/lib/db/queries/stats';
 import { formatCount } from '@/lib/db/queries/_safe';
+import { ProviderLogo } from '@/components/icons/ProviderLogos/ProviderLogo';
 
 export const metadata = {
   title: 'Vibe Coder Hub — every primitive a vibe coder needs',
@@ -61,7 +62,11 @@ const PILLARS = [
 ];
 
 export default async function LandingPage(): Promise<ReactElement> {
-  const [allModels, stats] = await Promise.all([listModels(), getSiteStats()]);
+  const [allModels, stats, typeCounts] = await Promise.all([
+    listModels(),
+    getSiteStats(),
+    getResourceCountsByType(),
+  ]);
   const topModels = allModels
     .slice()
     .sort((a, b) => b.intelligenceIndex - a.intelligenceIndex)
@@ -169,6 +174,7 @@ export default async function LandingPage(): Promise<ReactElement> {
                   {col.ids.map((id) => {
                     const t = getResourceType(id);
                     if (!t) return null;
+                    const count = typeCounts[id] ?? 0;
                     return (
                       <li key={id}>
                         <Link
@@ -182,7 +188,12 @@ export default async function LandingPage(): Promise<ReactElement> {
                           >
                             {t.glyph}
                           </span>
-                          {t.label}
+                          <span className="flex-1">{t.label}</span>
+                          {count > 0 && (
+                            <span className="font-mono text-[11px] text-text-secondary tabular-nums">
+                              {count.toLocaleString()}
+                            </span>
+                          )}
                         </Link>
                       </li>
                     );
@@ -219,22 +230,39 @@ export default async function LandingPage(): Promise<ReactElement> {
               href={`/models/${m.slug}`}
               className="bg-canvas border border-surface rounded-tile p-5 hover:border-mint transition-colors duration-base ease-out flex flex-col gap-3"
             >
-              <div className="font-mono uppercase tracking-[1.4px] text-[10px] text-text-secondary">
-                {m.provider}
+              <div className="flex items-center gap-2">
+                <ProviderLogo
+                  provider={m.provider}
+                  size={20}
+                  fallbackColor={m.providerColor}
+                />
+                <div className="font-mono uppercase tracking-[1.4px] text-[10px] text-text-secondary truncate">
+                  {m.provider}
+                </div>
               </div>
-              <div className="font-sans font-bold text-[16px] text-white leading-[1.2]">
+              <div className="font-sans font-bold text-[16px] text-white leading-[1.2] line-clamp-2">
                 {m.name}
               </div>
               <div className="flex items-baseline gap-2 pt-2 border-t border-surface">
                 <span className="font-mono font-bold text-[18px] text-mint tabular-nums">
-                  ${m.blendedCostPerMtok.toFixed(2)}
+                  {m.blendedCostPerMtok > 0
+                    ? `$${m.blendedCostPerMtok.toFixed(2)}`
+                    : 'Free'}
                 </span>
                 <span className="font-mono uppercase tracking-[1.4px] text-[9px] text-text-secondary">
-                  /MTOK
+                  {m.blendedCostPerMtok > 0 ? '/MTOK' : 'OPEN WEIGHTS'}
                 </span>
               </div>
               <div className="font-mono text-[11px] text-text-secondary tabular-nums">
-                #{m.intelligenceIndex} intelligence · {m.outputTokensPerSecond} tok/s
+                {[
+                  m.intelligenceIndex > 0 ? `${m.intelligenceIndex.toFixed(1)} intelligence` : null,
+                  m.outputTokensPerSecond > 0 ? `${m.outputTokensPerSecond} tok/s` : null,
+                  m.contextWindowAdvertised > 0
+                    ? `${m.contextWindowAdvertised >= 1_000_000 ? (m.contextWindowAdvertised / 1_000_000).toFixed(1) + 'M' : Math.round(m.contextWindowAdvertised / 1000) + 'k'} ctx`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'specs pending'}
               </div>
             </Link>
           ))}
