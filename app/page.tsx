@@ -98,7 +98,7 @@ export default async function LandingPage(): Promise<ReactElement> {
           <br />
           <span className="text-mint">a vibe coder needs.</span>
         </h1>
-        <p className="text-[#cfcfcf] text-[20px] md:text-[22px] leading-[1.4] max-w-prose mb-8">
+        <p className="text-text-body text-[20px] md:text-[22px] leading-[1.4] max-w-prose mb-8">
           One directory. One install. Components, MCPs, agents, models, deals
           — all queryable by IDE and stack.
         </p>
@@ -113,7 +113,7 @@ export default async function LandingPage(): Promise<ReactElement> {
       </section>
 
       {/* STATS */}
-      <section className="border-y border-surface bg-[#0a0a0a] px-4 md:px-8 py-6">
+      <section className="border-y border-surface bg-canvas-deep px-4 md:px-8 py-6">
         <div className="max-w-xl mx-auto flex flex-wrap gap-8 justify-between">
           {STATS.map((s) => (
             <div key={s.l} className="flex flex-col gap-1">
@@ -155,7 +155,7 @@ export default async function LandingPage(): Promise<ReactElement> {
       </section>
 
       {/* CATEGORY BROWSE */}
-      <section className="px-4 md:px-8 py-16 bg-[#0a0a0a] border-t border-surface">
+      <section className="px-4 md:px-8 py-16 bg-canvas-deep border-t border-surface">
         <div className="max-w-xl mx-auto">
           <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-mint mb-3">
             BY CATEGORY
@@ -178,7 +178,7 @@ export default async function LandingPage(): Promise<ReactElement> {
                       <li key={id}>
                         <Link
                           href={`/${t.slug}`}
-                          className="flex items-center gap-2 text-[14px] text-[#cfcfcf] hover:text-mint"
+                          className="flex items-center gap-2 text-[14px] text-text-body hover:text-mint"
                         >
                           <span
                             className="inline-flex items-center justify-center w-4 h-4 rounded-sm font-mono text-[9px]"
@@ -271,7 +271,7 @@ export default async function LandingPage(): Promise<ReactElement> {
       {/* CLOSER */}
       <section className="px-4 md:px-8 py-20">
         <div className="max-w-prose mx-auto border border-ultraviolet rounded-tile p-10 bg-ultraviolet/5">
-          <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-[#b69dff] mb-3">
+          <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-uv-label mb-3">
             ONE DIRECTORY
           </p>
           <h2 className="font-display uppercase leading-[0.95] mb-4 text-[clamp(40px,7vw,72px)]">

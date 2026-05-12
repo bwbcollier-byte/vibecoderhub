@@ -83,7 +83,7 @@ export function Header(): React.ReactElement {
                   'px-2.5 py-2 -mb-px border-b-2 transition-colors duration-base ease-out',
                   active
                     ? 'border-mint text-white'
-                    : 'border-transparent text-[#cfcfcf] hover:text-link-hover',
+                    : 'border-transparent text-text-body hover:text-link-hover',
                 )}
               >
                 {item.label}
@@ -101,7 +101,7 @@ export function Header(): React.ReactElement {
           onClick={openCmdK}
           className={cn(
             'hide-mobile inline-flex items-center gap-2 shrink-0',
-            'bg-[#0a0a0a] border border-surface rounded-feature',
+            'bg-canvas-deep border border-surface rounded-feature',
             'px-3 py-[7px] text-text-secondary hover:text-white',
             'min-w-[160px] cursor-pointer transition-colors duration-base ease-out',
           )}

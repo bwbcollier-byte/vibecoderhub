@@ -25,7 +25,7 @@ export function MegaMenu(): React.ReactElement {
         className={cn(
           'font-mono uppercase tracking-[1.5px] text-[11px] font-bold',
           'px-3 py-2 cursor-pointer transition-colors duration-base ease-out',
-          open ? 'text-white' : 'text-[#cfcfcf] hover:text-link-hover',
+          open ? 'text-white' : 'text-text-body hover:text-link-hover',
         )}
         aria-expanded={open}
         aria-haspopup="true"

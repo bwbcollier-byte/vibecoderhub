@@ -34,7 +34,7 @@ export default async function DealsIndexPage(): Promise<ReactElement> {
           <br />
           credits.
         </h1>
-        <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose mt-4">
+        <p className="text-text-body text-[18px] leading-[1.5] max-w-prose mt-4">
           Curated deals from across the vibe-coding stack. Public deals visible
           to all, member deals free with sign-up, Pro deals locked behind the
           $99/yr membership.

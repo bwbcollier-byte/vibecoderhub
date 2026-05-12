@@ -28,7 +28,7 @@ export function DealCard({ deal, isPro, isAuthed }: Props): React.ReactElement {
 
   const tierBadge =
     deal.tier === 'pro'
-      ? { color: 'text-[#b69dff]', border: 'border-ultraviolet', label: 'PRO' }
+      ? { color: 'text-uv-label', border: 'border-ultraviolet', label: 'PRO' }
       : deal.tier === 'member'
         ? { color: 'text-mint', border: 'border-mint-border', label: 'MEMBER' }
         : { color: 'text-text-secondary', border: 'border-surface', label: 'PUBLIC' };
@@ -108,7 +108,7 @@ export function DealCard({ deal, isPro, isAuthed }: Props): React.ReactElement {
           <p
             className={cn(
               'font-mono uppercase tracking-[1.5px] text-[11px] font-bold mt-2',
-              lockedReason === 'pro' ? 'text-[#b69dff]' : 'text-mint',
+              lockedReason === 'pro' ? 'text-uv-label' : 'text-mint',
             )}
           >
             {lockedReason === 'pro' ? 'PRO DEAL' : 'MEMBER DEAL'}

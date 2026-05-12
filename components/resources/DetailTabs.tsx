@@ -43,7 +43,7 @@ export function DetailTabs({
 
 function Overview({ resource: r }: { resource: GenericResource }): React.ReactElement {
   return (
-    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-[#cfcfcf]">
+    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-text-body">
       <p>{r.description}</p>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">
         <Row label="Author" value={r.author} />

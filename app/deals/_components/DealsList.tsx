@@ -94,7 +94,7 @@ export function DealsList({ deals }: Props): React.ReactElement {
                 'rounded-pill border px-3 py-1.5 cursor-pointer',
                 'transition-colors duration-base ease-out',
                 active
-                  ? 'bg-ultraviolet/10 border-ultraviolet text-[#b69dff]'
+                  ? 'bg-ultraviolet/10 border-ultraviolet text-uv-label'
                   : 'border-surface text-text-secondary hover:text-white',
               )}
             >

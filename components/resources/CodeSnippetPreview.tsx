@@ -21,7 +21,7 @@ export function CodeSnippetPreview({ code, language }: Props): ReactElement {
         </p>
       </div>
       <pre
-        className="bg-[#0a0a0a] border border-surface rounded-md p-5 overflow-auto font-mono text-[13px] leading-[1.6] text-text-muted whitespace-pre"
+        className="bg-canvas-deep border border-surface rounded-md p-5 overflow-auto font-mono text-[13px] leading-[1.6] text-text-muted whitespace-pre"
       >
         {code}
       </pre>

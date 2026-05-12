@@ -68,7 +68,7 @@ const COLUMNS: FooterColumn[] = [
 
 export function Footer(): React.ReactElement {
   return (
-    <footer className="bg-[#0a0a0a] border-t border-surface px-4 md:px-8 py-16 mt-16">
+    <footer className="bg-canvas-deep border-t border-surface px-4 md:px-8 py-16 mt-16">
       <div className="max-w-xl mx-auto">
         <div className="flex flex-wrap gap-12 mb-12">
           <div className="flex-none basis-[280px]">
@@ -112,7 +112,7 @@ export function Footer(): React.ReactElement {
               <ul className="flex flex-col gap-2">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-[13px] text-[#cfcfcf] hover:text-link-hover">
+                    <Link href={link.href} className="text-[13px] text-text-body hover:text-link-hover">
                       {link.label}
                     </Link>
                   </li>

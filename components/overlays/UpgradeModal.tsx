@@ -53,7 +53,7 @@ export function UpgradeModal({ context, onClose }: Props): React.ReactElement {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent width={560}>
         <DialogHeader>
-          <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-[#b69dff]">
+          <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-uv-label">
             UNLOCK PRO
           </p>
           <DialogTitle className="text-[clamp(40px,5vw,60px)]">
@@ -83,7 +83,7 @@ export function UpgradeModal({ context, onClose }: Props): React.ReactElement {
             </div>
             <ul className="border-t border-surface pt-3 flex flex-col gap-1">
               {PRO_PERKS.map((p) => (
-                <li key={p} className="flex items-center gap-2 text-[13px] text-[#cfcfcf]">
+                <li key={p} className="flex items-center gap-2 text-[13px] text-text-body">
                   <Icon.Check size={14} stroke="var(--color-mint)" />
                   {p}
                 </li>

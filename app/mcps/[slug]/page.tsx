@@ -73,7 +73,7 @@ export default async function McpDetailPage({ params }: PageProps): Promise<Reac
               {mcp.name}.
             </h1>
             {mcp.tagline && (
-              <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">{mcp.tagline}</p>
+              <p className="text-text-body text-[18px] leading-[1.5] max-w-prose">{mcp.tagline}</p>
             )}
             {mcp.description && mcp.description.trim() !== mcp.tagline.trim() && (
               <p className="text-text-secondary text-[14px] leading-[1.6] max-w-prose">

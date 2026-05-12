@@ -34,7 +34,7 @@ export function ModelDetailTabs({ model }: Props): React.ReactElement {
 
 function Overview({ model }: Props): React.ReactElement {
   return (
-    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-[#cfcfcf]">
+    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-text-body">
       <p>{model.description}</p>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">
         <Row label="Architecture" value={model.architecture ?? '—'} />

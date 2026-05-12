@@ -63,7 +63,7 @@ export function McpCard({
       )}
     >
       {ribbon && (
-        <span className="absolute -top-2.5 left-4 z-10 bg-canvas border border-ultraviolet rounded-xs px-2 py-px font-mono uppercase tracking-[1.4px] text-[9px] font-bold text-[#b69dff]">
+        <span className="absolute -top-2.5 left-4 z-10 bg-canvas border border-ultraviolet rounded-xs px-2 py-px font-mono uppercase tracking-[1.4px] text-[9px] font-bold text-uv-label">
           {ribbon}
         </span>
       )}

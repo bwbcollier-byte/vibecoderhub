@@ -6,6 +6,36 @@
 
 ---
 
+## Current state — end of Session 19 — **TOKEN SWEEP COMPLETE · VISUAL BASELINE AUDITED CLEAN**
+
+**Session phase:** Design-polish session. Two parallel passes:
+
+1. **Token sweep (subagent A)** — replaced inline hex utility classes with the Session-18 named tokens across 27 files / ~37 occurrences. Pure mechanical, visually inert (colours resolve identically):
+   - `text-[#cfcfcf]` → `text-text-body` (16×)
+   - `bg-[#0a0a0a]` → `bg-canvas-deep` (7×)
+   - `text-[#b69dff]` → `text-uv-label` (14×)
+   - `grep` for any of the three patterns under `components/` and `app/` now returns zero hits.
+   - Inline `style={{ ... }}` cases left alone (those need a separate pass — they're dynamic colour bindings, not static class swaps).
+   - OG/icon/email-template carve-outs preserved (Edge `ImageResponse` runtime can't see Tailwind).
+
+2. **Visual audit (subagent B)** — scanned `/`, `/models`, `/mcps`, `/pricing` against `docs/planning/promptkit-recon/src/app.css` and `docs/planning/TOKEN_RECONCILIATION.md`. **Zero deviations found.** Hero kickers, sort/filter pills, stat strips, card kickers, badges, stat labels, plan kickers, comparison-table headers — all already mono-caps. Section h2s correctly use either `font-display` (Bebas) or `font-sans font-bold text-[34px]` (the `headingXl` DM Sans token per TOKEN_RECONCILIATION §3). Cards already use `rounded-tile p-5 hover:border-mint`. Buttons already use `h-btn-*` tokens with mono-caps labels. Audit was honest — no padding the report with invented findings.
+
+**Confirms what Session 14's six-pass review found (0 P0/P1 visual deviations) is still true with real data on every page** — sessions 15-18 didn't introduce any visual regressions, and the token additions in Session 18 codified the last few inline literals as named utilities. The Promptkit baseline is intact.
+
+### Quality gates
+
+`pnpm typecheck` ✓ · `pnpm lint` ✓ · `pnpm build` ✓.
+
+### Outstanding follow-ups
+
+- **Inline `style={{ background/color: '#…' }}` sweep.** A handful of dynamic-binding sites still pass raw hexes via `style={...}` — most are intentionally driven by per-row `tint`/`providerColor` values, but a few static cases could move to utility classes. Low priority.
+- **Detail pages + `/news` + `/dashboard` + `/compare` + `/best-for` + `/guides`** weren't in the four-page audit scope. Same patterns; no reason to expect deviations, but worth a follow-up scan if time permits.
+- **OAuth dashboard setup** still blocked on user (per `docs/setup/OAUTH_PROVIDERS.md`).
+- **Magic-link production** still needs a verified Resend domain.
+- **Screenshots** — preview tool's headless Chromium kept timing out on first compile (recurring issue from Session 18). Session 17 screenshots remain the visual reference; the token sweep was visually inert.
+
+---
+
 ## Current state — end of Session 18 — **GOOGLE OAUTH UI + 3 LOAD-BEARING TOKENS PROMOTED**
 
 **Session phase:** Auth-UI build-out + a token-system extension that codifies three colours that were already widely used in inline literals across the codebase. Design polish was scoped down (see "Deferred" below).

@@ -121,14 +121,14 @@ export function GuideStepper({
         <h2 className="font-display uppercase leading-[0.95] text-[clamp(32px,5vw,52px)] text-mint">
           {steps[active]?.title}
         </h2>
-        <p className="text-[#cfcfcf] text-[17px] leading-[1.7]">
+        <p className="text-text-body text-[17px] leading-[1.7]">
           {steps[active]?.body}
         </p>
 
         {steps[active]?.verifyCommand && (
           <div className="border border-ultraviolet bg-ultraviolet/5 rounded-tile p-4 flex flex-col gap-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-[#b69dff]">
+              <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-uv-label">
                 VERIFY
               </span>
               <code className="font-mono text-[13px] text-white flex-1 truncate">

@@ -54,7 +54,7 @@ export function GenericResourceCard({
       kicker: 'text-white/70',
       headline: 'group-hover:text-mint',
       stat: 'text-white/70',
-      ribbonBorder: 'border-ultraviolet text-[#b69dff]',
+      ribbonBorder: 'border-ultraviolet text-uv-label',
       bookmark: bookmarked
         ? 'text-mint bg-mint/15'
         : 'text-white/70 hover:text-white hover:bg-white/10',

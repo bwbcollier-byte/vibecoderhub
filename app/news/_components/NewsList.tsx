@@ -40,7 +40,7 @@ export function NewsList({ items }: Props): React.ReactElement {
           return (
             <label
               key={k}
-              className="flex items-center gap-2 text-[13px] text-[#cfcfcf] cursor-pointer"
+              className="flex items-center gap-2 text-[13px] text-text-body cursor-pointer"
             >
               <input
                 type="checkbox"

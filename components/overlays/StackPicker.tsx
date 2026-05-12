@@ -73,7 +73,7 @@ export function StackPicker({ onClose }: StackPickerProps): React.ReactElement {
             <p className="font-mono uppercase tracking-[1.5px] text-[11px] font-bold text-mint">
               YOUR SETUP
             </p>
-            <p className="font-mono uppercase tracking-[1.6px] text-[9px] font-bold text-[#b69dff] px-2 py-0.5 border border-ultraviolet rounded-xs">
+            <p className="font-mono uppercase tracking-[1.6px] text-[9px] font-bold text-uv-label px-2 py-0.5 border border-ultraviolet rounded-xs">
               FILTERS EVERY LIST + RECOMMENDATION
             </p>
           </div>

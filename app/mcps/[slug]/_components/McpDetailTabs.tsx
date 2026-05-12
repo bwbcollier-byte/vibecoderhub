@@ -37,7 +37,7 @@ export function McpDetailTabs({ mcp }: Props): React.ReactElement {
 
 function Overview({ mcp }: Props): React.ReactElement {
   return (
-    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-[#cfcfcf]">
+    <div className="flex flex-col gap-4 text-[15px] leading-[1.6] text-text-body">
       <p>{mcp.description}</p>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[14px]">
         <Row label="Version" value={mcp.version} />
@@ -94,7 +94,7 @@ function ToolCard({ tool }: { tool: McpTool }): React.ReactElement {
 
       {open && (
         <div className="border-t border-surface px-5 py-4 flex flex-col gap-3">
-          <p className="text-[14px] text-[#cfcfcf] leading-[1.6]">{tool.description}</p>
+          <p className="text-[14px] text-text-body leading-[1.6]">{tool.description}</p>
           {propKeys.length > 0 ? (
             <>
               <p className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">

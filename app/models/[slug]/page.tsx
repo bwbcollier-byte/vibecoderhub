@@ -105,7 +105,7 @@ export default async function ModelDetailPage({ params }: PageProps): Promise<Re
             <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(56px,9vw,112px)]">
               {model.name}.
             </h1>
-            <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">
+            <p className="text-text-body text-[18px] leading-[1.5] max-w-prose">
               {model.description}
             </p>
             <div className="flex flex-wrap gap-1.5">

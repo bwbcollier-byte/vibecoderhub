@@ -69,7 +69,7 @@ export default async function BestForPage({ params }: PageProps): Promise<ReactE
         >
           {useCase.title}
         </h1>
-        <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose mt-4">
+        <p className="text-text-body text-[18px] leading-[1.5] max-w-prose mt-4">
           {useCase.description}
         </p>
       </header>
@@ -97,7 +97,7 @@ export default async function BestForPage({ params }: PageProps): Promise<ReactE
                     {pick.resourceName}
                   </Link>
                 </h2>
-                <p className="text-[#cfcfcf] text-[15px] leading-[1.7] mb-3">
+                <p className="text-text-body text-[15px] leading-[1.7] mb-3">
                   {pick.rationale}
                 </p>
                 <Link

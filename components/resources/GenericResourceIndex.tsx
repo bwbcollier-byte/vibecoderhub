@@ -121,7 +121,7 @@ export function GenericResourceIndex({ items, config }: Props): React.ReactEleme
                       'rounded-pill px-3 py-1.5 border cursor-pointer',
                       'transition-colors duration-base ease-out',
                       active
-                        ? 'bg-ultraviolet/10 border-ultraviolet text-[#b69dff]'
+                        ? 'bg-ultraviolet/10 border-ultraviolet text-uv-label'
                         : 'border-surface text-text-secondary hover:text-white',
                     )}
                   >

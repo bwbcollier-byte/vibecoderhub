@@ -316,7 +316,7 @@ export function CmdK({ onClose, onOpenStackPicker }: CmdKProps): React.ReactElem
               className="bg-transparent border-none outline-none text-[16px] text-white flex-1 font-sans"
             />
             {isCommand && (
-              <span className="font-mono uppercase tracking-[1.4px] text-[9px] font-bold text-[#b69dff] px-1.5 py-0.5 border border-ultraviolet rounded-xs">
+              <span className="font-mono uppercase tracking-[1.4px] text-[9px] font-bold text-uv-label px-1.5 py-0.5 border border-ultraviolet rounded-xs">
                 COMMAND MODE
               </span>
             )}
@@ -565,7 +565,7 @@ function ActionRow({
 
 function Kbd({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 bg-[#0a0a0a] border border-surface rounded-sm font-mono text-[10px] text-text-muted">
+    <kbd className="inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 bg-canvas-deep border border-surface rounded-sm font-mono text-[10px] text-text-muted">
       {children}
     </kbd>
   );

@@ -52,7 +52,7 @@ export function DetailChassis({
             <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(56px,9vw,112px)]">
               {r.name}.
             </h1>
-            <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">{r.tagline}</p>
+            <p className="text-text-body text-[18px] leading-[1.5] max-w-prose">{r.tagline}</p>
             {(r.compatibleClients.length > 0 || r.stackTags.length > 0) && (
               <div className="flex flex-wrap gap-1.5">
                 {r.compatibleClients.map((c) => (

@@ -70,7 +70,7 @@ export default async function NewsArticlePage({ params }: PageProps): Promise<Re
         {item.summary}
       </p>
 
-      <div className="font-sans text-[18px] leading-[1.7] text-[#cfcfcf] flex flex-col gap-4 whitespace-pre-wrap">
+      <div className="font-sans text-[18px] leading-[1.7] text-text-body flex flex-col gap-4 whitespace-pre-wrap">
         {item.body}
       </div>
 
@@ -83,7 +83,7 @@ export default async function NewsArticlePage({ params }: PageProps): Promise<Re
             item.topics.map((t) => (
               <span
                 key={t}
-                className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-[#cfcfcf] border border-surface rounded-pill px-3 py-1"
+                className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-text-body border border-surface rounded-pill px-3 py-1"
               >
                 {t}
               </span>

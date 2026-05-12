@@ -22,7 +22,7 @@ export default async function BestForIndexPage(): Promise<ReactElement> {
         <h1 className="font-display uppercase leading-[0.92] tracking-[0.5px] text-[clamp(72px,12vw,144px)]">
           Best for…
         </h1>
-        <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose mt-4">
+        <p className="text-text-body text-[18px] leading-[1.5] max-w-prose mt-4">
           Curated stack-rankings per use case. Updated weekly.
         </p>
       </header>

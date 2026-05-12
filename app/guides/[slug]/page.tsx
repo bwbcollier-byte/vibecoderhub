@@ -48,7 +48,7 @@ export default async function GuidePage({ params }: PageProps): Promise<ReactEle
         <h1 className="font-display uppercase leading-[0.95] text-[clamp(40px,7vw,84px)] mb-4">
           {guide.title}
         </h1>
-        <p className="text-[#cfcfcf] text-[18px] leading-[1.5] max-w-prose">
+        <p className="text-text-body text-[18px] leading-[1.5] max-w-prose">
           {guide.description}
         </p>
       </header>
