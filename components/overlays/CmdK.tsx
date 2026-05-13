@@ -424,6 +424,14 @@ export function CmdK({ onClose, onOpenStackPicker }: CmdKProps): React.ReactElem
                 onSelect={() => navigate('/deals')}
               />
               <ActionRow
+                value="design systems brand tokens typography"
+                trimmed={trimmed}
+                isCommand={isCommand}
+                kicker="GO"
+                label="Browse design systems"
+                onSelect={() => navigate('/design-systems')}
+              />
+              <ActionRow
                 value="clear my stack"
                 trimmed={trimmed}
                 isCommand={isCommand}

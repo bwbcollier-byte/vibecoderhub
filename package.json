@@ -30,6 +30,7 @@
     "ingest:21st": "tsx scripts/ingest/21st.ts",
     "ingest:mcp-registry": "tsx scripts/ingest/mcp-registry.ts",
     "ingest:smithery": "tsx scripts/ingest/smithery.ts",
+    "ingest:design-systems": "tsx scripts/ingest/airtable-design-systems.ts",
     "ingest:awesome-claude-plugins": "tsx scripts/ingest/awesome-claude-plugins.ts",
     "ingest:awesome-agent-skills": "tsx scripts/ingest/awesome-agent-skills.ts",
     "ingest:github-code-search": "tsx scripts/ingest/github-code-search.ts",

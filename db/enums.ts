@@ -32,6 +32,7 @@ export const resourceTypeEnum = pgEnum('resource_type', [
   'guide',
   'deal',
   'news',
+  'design_system',
 ]);
 
 export const publishStatusEnum = pgEnum('publish_status', [

@@ -11,6 +11,7 @@ import { listNewsSlugs } from '@/lib/db/queries/news';
 import { listGuideSlugs } from '@/lib/db/queries/guides';
 import { listUseCaseSlugs } from '@/lib/db/queries/best-for';
 import { listResourceSlugs } from '@/lib/db/queries/resources';
+import { listDesignSystemSlugs } from '@/lib/db/queries/design-systems';
 import * as Configs from '@/lib/seed/_configs';
 import type { GenericResource, GenericTypeConfig } from '@/lib/seed/generic';
 
@@ -30,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: '/guides',    changeFrequency: 'weekly'  as const, priority: 0.7 },
     { url: '/best-for',  changeFrequency: 'weekly'  as const, priority: 0.7 },
     { url: '/pricing',   changeFrequency: 'monthly' as const, priority: 0.5 },
+    { url: '/design-systems', changeFrequency: 'weekly' as const, priority: 0.7 },
     { url: '/about',     changeFrequency: 'monthly' as const, priority: 0.3 },
     { url: '/terms',     changeFrequency: 'yearly'  as const, priority: 0.2 },
     { url: '/privacy',   changeFrequency: 'yearly'  as const, priority: 0.2 },
@@ -45,6 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const mcpSlugs = await listMcpSlugs();
   const mcpDetailPaths = mcpSlugs.map((slug) => ({
     url: `/mcps/${slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  const designSystemSlugs = await listDesignSystemSlugs();
+  const designSystemPaths = designSystemSlugs.map((slug) => ({
+    url: `/design-systems/${slug}`,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
@@ -112,6 +121,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPaths,
     ...modelDetailPaths,
     ...mcpDetailPaths,
+    ...designSystemPaths,
     ...genericPaths,
     ...dealsPaths,
     ...newsPaths,

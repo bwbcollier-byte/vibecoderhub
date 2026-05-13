@@ -14,7 +14,8 @@ export type ResourceTypeId =
   | 'component' | 'mcp' | 'skill' | 'subagent' | 'script' | 'rule'
   | 'prompt' | 'plugin' | 'marketplace' | 'hook' | 'command' | 'starter'
   | 'tool' | 'model' | 'sandbox' | 'observability' | 'backend' | 'asset'
-  | 'showcase' | 'docs_for_llms' | 'spec' | 'workflow' | 'eval' | 'stack';
+  | 'showcase' | 'docs_for_llms' | 'spec' | 'workflow' | 'eval' | 'stack'
+  | 'design_system';
 
 export interface ResourceType {
   id: ResourceTypeId;
@@ -55,6 +56,8 @@ export const RESOURCE_TYPES: readonly ResourceType[] = [
   { id: 'tool',         slug: 'tools',         label: 'Tools',         glyph: '⚒', tint: colors.tileOrange, group: 'infra' },
   { id: 'model',        slug: 'models',        label: 'Models',        glyph: '◯', tint: colors.tilePurple, group: 'infra' },
   { id: 'mcp',          slug: 'mcps',          label: 'MCPs',          glyph: '⌖', tint: colors.tilePurple, group: 'extensions' },
+  // Brand systems — Session 20. URL slug `design-systems` (dashed); enum `design_system` (underscored).
+  { id: 'design_system',slug: 'design-systems', label: 'Design Systems', glyph: '◐', tint: colors.tileOrange, group: 'content' },
 ];
 
 export const RESOURCE_TYPE_GROUPS: ReadonlyArray<{
@@ -65,7 +68,7 @@ export const RESOURCE_TYPE_GROUPS: ReadonlyArray<{
   { heading: 'EXTENSIONS', group: 'extensions', ids: ['skill', 'subagent', 'plugin', 'hook', 'command', 'marketplace'] },
   { heading: 'PROMPTS',    group: 'prompts',    ids: ['prompt', 'spec', 'rule', 'workflow'] },
   { heading: 'INFRA',      group: 'infra',      ids: ['sandbox', 'observability', 'backend', 'docs_for_llms', 'eval'] },
-  { heading: 'CONTENT',    group: 'content',    ids: ['component', 'asset', 'starter', 'showcase', 'stack', 'script'] },
+  { heading: 'CONTENT',    group: 'content',    ids: ['component', 'asset', 'starter', 'showcase', 'stack', 'script', 'design_system'] },
 ];
 
 export function getResourceType(id: ResourceTypeId): ResourceType | undefined {

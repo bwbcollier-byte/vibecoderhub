@@ -30,7 +30,7 @@ export function MegaMenu(): React.ReactElement {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        All 24 types <Icon.ChevDown size={11} className="inline-block ml-1" />
+        All 25 types <Icon.ChevDown size={11} className="inline-block ml-1" />
       </button>
       {open && (
         <div

@@ -28,6 +28,7 @@ const ICON_MAP: Record<ResourceTypeId, IconComponent> = {
   eval: Icon.Check,
   stack: Icon.Layers,
   component: Icon.Layers,
+  design_system: Icon.Sliders,
 };
 
 export function iconForResourceType(typeId: ResourceTypeId): IconComponent {

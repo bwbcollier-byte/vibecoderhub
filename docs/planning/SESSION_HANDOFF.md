@@ -6,6 +6,74 @@
 
 ---
 
+## Current state — end of Session 20 — **25TH RESOURCE TYPE: DESIGN SYSTEMS LIVE**
+
+**Session phase:** Added a brand-new resource type end-to-end (schema → ingest → query layer → UI → nav). 69 design systems live at `/design-systems`.
+
+**Live inventory (3,457 total resources, +69 design_system + earlier component/skill/subagent backfills since Session 19's 3,388):**
+
+| Type | Count |
+|---|---|
+| mcp | 1,029 |
+| component | 841 |
+| model | 365 |
+| subagent | 316 |
+| rule | 207 |
+| tool | 165 |
+| skill | 159 |
+| plugin | 146 |
+| command | 110 |
+| **design_system** | **69** |
+| hook | 50 |
+
+Plus 168 news rows.
+
+**Session 20 summary**
+
+### Schema + type registry
+- `db/enums.ts` — added `'design_system'` to `resourceTypeEnum`. Enum on the deployed DB already had it (created upstream by user).
+- `db/schema.ts` — added `designSystems` `pgTable('pk_design_systems', …)` with all 36 columns mirroring the deployed table (id FK to resources, domain, industry, brand_dna, quick_start, system_prompt, design_tokens_json + 4 more colour jsonbs, fonts, 5 more token jsonbs, voice/tone/dos/donts/components/templates/accessibility text fields, brandfetch metadata, quality + employee + founded year + headquarters).
+- `lib/resource-types.ts` — added `'design_system'` to `ResourceTypeId` union, registered in `RESOURCE_TYPES` (slug `design-systems`, label `Design Systems`, glyph `◐`, tint `tileOrange`, group `content`), added to the `CONTENT` group ids.
+- `lib/resource-type-icons.ts` — `design_system → Icon.Sliders`.
+
+### Ingest script
+- `scripts/ingest/airtable-design-systems.ts` — Airtable REST `https://api.airtable.com/v0/appbUpVCXkuPCOo6y/tblwSnr8wvOeGnccv` with `filterByFormula=NOT({System Prompt}='')` to capture only the 69 fully-enriched records. Bearer auth via `AIRTABLE_API_KEY`. Pagination via Airtable's `offset` cursor (returned 0 since 69 < 100 pageSize). For each record: maps fields → upserts spine row in `pk_resources` (slug derived from domain → `mastercard-com` style; type_slug=`design_system`) → upserts join row in `pk_design_systems`. JSON fields parsed defensively (`Design Tokens JSON` etc. arrive as strings from Airtable). Stack tags include `Industry` and `Tier`.
+- `package.json` — `pnpm ingest:design-systems` script.
+- **Run result: 69 inserted, 0 failed in ~100 seconds.**
+
+### Query layer
+- `lib/db/queries/design-systems.ts` — `listDesignSystems({industry?, sort?, limit?, offset?})`, `getDesignSystemBySlug`, `getDesignSystemCount`, `listDesignSystemSlugs`, `listDesignSystemIndustries`. Sorts: `quality` (default — qualityScore desc nulls last → publishedAt desc), `newest`, `a-z`, `oldest-company`. `safeQuery`-wrapped for graceful empties. Strongly-typed `DesignSystemListItem` and `DesignSystemDetail` exports + `PrimaryColor` shape.
+
+### UI (subagent)
+- `app/design-systems/page.tsx` — Server Component; parallel fetches list + count + industries.
+- `app/design-systems/_components/DesignSystemsList.tsx` — Client; industry pill filter row + sort row (mono-caps), search, editor's-pick rhythm (mint at 0, UV at 4), bookmark wiring via `BookmarksProvider`.
+- `app/design-systems/_components/DesignSystemCard.tsx` — Three swatch circles from `primaryColors`, 2×2 stats grid (Industry · Heading font · Body font · Quality), bookmark button. Three tones matching `ModelCard`.
+- `app/design-systems/[slug]/page.tsx` — Server; breadcrumb, swatch-strip hero, kicker `◐ DESIGN SYSTEM · industry · HQ · founded year` (filter empty parts), 4-up stats strip, right rail with "Visit website" + "Industry profile" cards.
+- `app/design-systems/[slug]/_components/DesignSystemDetailTabs.tsx` — Hash-driven `Tabs` with 8 conditionally-rendered panels: **Overview · System Prompt · Quick Start · Tokens · Typography · Colours · Components · Voice & Tone**. Copy buttons on System Prompt + Quick Start fire `toast.success('Copied!')`. Components panel renders `componentExamples` HTML via `dangerouslySetInnerHTML` inside a sandboxed `bg-canvas-deep p-6 rounded-md` block — trusted because the source is our editorial Airtable, not user input (commented inline).
+
+### Nav + sitemap
+- `components/layout/header/MegaMenu.tsx` — auto-discovers via `RESOURCE_TYPE_GROUPS`; just bumped the label `All 24 types → All 25 types`.
+- `app/sitemap.ts` — added `/design-systems` static path + per-slug detail paths via `listDesignSystemSlugs()`.
+- **Cmd-K not wired yet** — still uses sync seed imports (`buildIndex()` over `_configs.ts`). Same Session-18 deferral; live `searchResources()` swap is the cleanest fix.
+
+### Quality gates
+
+`pnpm typecheck` ✓ · `pnpm lint` ✓ · `pnpm build` ✓.
+
+**Verified live on `localhost:3000`:**
+- `/design-systems` → 200, "69 INDEXED" kicker, Mastercard / Framer / Binance cards rendering with real swatch colours.
+- `/design-systems/cohere-com` → 200, full kicker `◐ DESIGN SYSTEM · SaaS · Toronto, Canada · founded 2019`, all 8 tabs present (Overview, System Prompt, Quick Start, Tokens, Typography, Colours, Components, Voice).
+
+### Outstanding follow-ups
+
+- **Cmd-K design-systems entries** — wait for the live `searchResources()` migration; `lib/db/queries/search.ts` already exists.
+- **/compare** — `resolve.ts` would resolve `design_system:slug` via `getResourceBySlug('design_system', slug)` since `design_system` is now in `RESOURCE_TYPE_IDS`. Not tested. Worth a one-line sanity check.
+- **Pagination for design-systems index** — currently capped at 200 (default `limit`), but only 69 exist so it's a no-op for now. If Airtable grows past 200 published, add `?page=` like the other indexes need.
+- **The dangerouslySetInnerHTML on the Components tab** — fine for trusted Airtable editorial input. If we ever take user submissions for design systems, sanitise via DOMPurify or similar before render.
+- **`pk_design_systems` table backfill check** — backfilling FK rows wasn't needed because the ingest script writes them directly alongside the spine row.
+
+---
+
 ## Current state — end of Session 19 — **TOKEN SWEEP COMPLETE · VISUAL BASELINE AUDITED CLEAN**
 
 **Session phase:** Design-polish session. Two parallel passes:

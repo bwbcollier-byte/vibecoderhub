@@ -1461,3 +1461,51 @@ export const comparisons = pgTable('pk_comparisons',
     tokenIdx: index('comparisons_token_idx').on(t.shareToken),
   }),
 );
+
+// ---------------------------------------------------------------------------
+// 12. DESIGN SYSTEMS — Session 20
+// ---------------------------------------------------------------------------
+// 25th resource type. Source: Airtable base appbUpVCXkuPCOo6y. Each row pairs
+// a brand's design system (tokens, typography, voice, components) with the
+// canonical pk_resources spine entry (one-to-one via FK on id).
+
+export const designSystems = pgTable('pk_design_systems', {
+  id: uuid('id')
+    .primaryKey()
+    .references(() => resources.id, { onDelete: 'cascade' }),
+  domain: text('domain'),
+  industry: text('industry'),
+  brandDna: text('brand_dna'),
+  quickStart: text('quick_start'),
+  systemPrompt: text('system_prompt'),
+  designTokensJson: jsonb('design_tokens_json'),
+  primaryColors: jsonb('primary_colors'),
+  secondaryColors: jsonb('secondary_colors'),
+  accentColors: jsonb('accent_colors'),
+  gradientLibrary: text('gradient_library'),
+  headingFont: text('heading_font'),
+  bodyFont: text('body_font'),
+  fontStack: text('font_stack'),
+  typeScale: jsonb('type_scale'),
+  spacingScale: jsonb('spacing_scale'),
+  radiusTokens: jsonb('radius_tokens'),
+  shadowTokens: jsonb('shadow_tokens'),
+  motionTokens: jsonb('motion_tokens'),
+  iconographyStyle: text('iconography_style'),
+  imageryStyle: text('imagery_style'),
+  voiceAndTone: text('voice_and_tone'),
+  sampleMicrocopy: text('sample_microcopy'),
+  dos: text('dos'),
+  donts: text('donts'),
+  spacingLayout: text('spacing_layout'),
+  componentExamples: text('component_examples'),
+  templateHtml: text('template_html'),
+  templateReact: text('template_react'),
+  accessibilityNotes: text('accessibility_notes'),
+  brandfetchId: text('brandfetch_id'),
+  brandfetchConfidence: numeric('brandfetch_confidence', { precision: 5, scale: 4 }),
+  qualityScore: integer('quality_score'),
+  employeeCount: integer('employee_count'),
+  foundedYear: integer('founded_year'),
+  headquarters: text('headquarters'),
+});
