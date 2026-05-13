@@ -105,17 +105,69 @@ function Overview({ system }: Props): React.ReactElement {
     { label: 'Imagery style',     value: system.imageryStyle },
   ].filter((r) => hasText(r.value));
 
+  // Inline swatch row — prefer explicit primaryColors, fall back to token colours.
+  const tokenColors = parseTokenColors(system.designTokensJson);
+  const swatchHexes: string[] = (
+    system.primaryColors.length > 0
+      ? system.primaryColors.map((c) => c.hex)
+      : tokenColors.map((c) => c.hex)
+  ).slice(0, 8);
+
+  const meta: { label: string; value: string }[] = [
+    { label: 'INDUSTRY',  value: system.industry ?? '—' },
+    { label: 'HQ',        value: system.headquarters ?? '—' },
+    { label: 'FOUNDED',   value: system.foundedYear != null ? `${system.foundedYear}` : '—' },
+    {
+      label: 'EMPLOYEES',
+      value:
+        system.employeeCount != null
+          ? system.employeeCount.toLocaleString()
+          : '—',
+    },
+  ];
+
   return (
-    <dl className="flex flex-col gap-5 text-[15px] leading-[1.6] text-text-body">
-      {rows.map((r) => (
-        <div key={r.label} className="flex flex-col gap-1">
-          <dt className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
-            {r.label}
-          </dt>
-          <dd className="whitespace-pre-wrap">{r.value}</dd>
+    <div className="flex flex-col gap-8">
+      {swatchHexes.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {swatchHexes.map((hex, i) => (
+            <span
+              key={`${hex}-${i}`}
+              aria-hidden
+              title={hex}
+              className="w-8 h-8 rounded-md border border-surface"
+              style={{ background: hex }}
+            />
+          ))}
         </div>
-      ))}
-    </dl>
+      )}
+
+      <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 border-y border-surface py-5">
+        {meta.map((m) => (
+          <div key={m.label} className="flex flex-col gap-1 min-w-0">
+            <dt className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+              {m.label}
+            </dt>
+            <dd className="text-white text-[15px] truncate" title={m.value}>
+              {m.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {rows.length > 0 && (
+        <dl className="flex flex-col gap-5 text-[15px] leading-[1.6] text-text-body">
+          {rows.map((r) => (
+            <div key={r.label} className="flex flex-col gap-1">
+              <dt className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+                {r.label}
+              </dt>
+              <dd className="whitespace-pre-wrap">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
   );
 }
 
@@ -539,13 +591,95 @@ function Tokens({ system }: Props): React.ReactElement {
 
 // ──────────────────── Typography ────────────────────
 
+const GOOGLE_FONTS = new Set(
+  [
+    'Inter',
+    'Roboto',
+    'Open Sans',
+    'Lato',
+    'Montserrat',
+    'Poppins',
+    'Raleway',
+    'Oswald',
+    'Source Sans 3',
+    'Source Sans Pro',
+    'Manrope',
+    'Plus Jakarta Sans',
+    'Mulish',
+    'Karla',
+    'IBM Plex Sans',
+    'IBM Plex Serif',
+    'Playfair Display',
+    'Merriweather',
+    'Lora',
+    'EB Garamond',
+    'Cormorant Garamond',
+    'Crimson Pro',
+    'Inter Tight',
+    'JetBrains Mono',
+    'Fira Code',
+    'Space Grotesk',
+    'Space Mono',
+  ].map((s) => s.toLowerCase()),
+);
+
+/** Pull the first plain family name from a font stack string. */
+function firstFontFamily(stack: string | null | undefined): string | null {
+  if (!stack) return null;
+  const first = stack.split(',')[0]?.trim().replace(/^["']|["']$/g, '');
+  return first && first.length > 0 ? first : null;
+}
+
+function googleFontHref(name: string | null): string | null {
+  if (!name) return null;
+  if (!GOOGLE_FONTS.has(name.toLowerCase())) return null;
+  const fam = name.replace(/\s+/g, '+');
+  return `https://fonts.googleapis.com/css2?family=${fam}:wght@400;700&display=swap`;
+}
+
 function Typography({ system }: Props): React.ReactElement {
   const headingStack = system.headingFont ?? system.fontStack ?? undefined;
   const bodyStack = system.bodyFont ?? system.fontStack ?? undefined;
   const typeRows = parseTypeScale(system.typeScale);
 
+  const headingFamily = firstFontFamily(system.headingFont) ?? firstFontFamily(system.fontStack);
+  const bodyFamily = firstFontFamily(system.bodyFont) ?? firstFontFamily(system.fontStack);
+  const headingHref = googleFontHref(headingFamily);
+  const bodyHref = googleFontHref(bodyFamily);
+
+  // Signature sample word — first non-empty word from sampleMicrocopy, else system name.
+  const sampleWord = (() => {
+    const m = (system.sampleMicrocopy ?? '').match(/[A-Za-z][A-Za-z'’-]+/);
+    if (m && m[0]) return m[0];
+    return system.name;
+  })();
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      {headingHref && <link rel="stylesheet" href={headingHref} />}
+      {bodyHref && bodyHref !== headingHref && (
+        <link rel="stylesheet" href={bodyHref} />
+      )}
+
+      {headingStack && (
+        <div className="flex flex-col gap-3 border-b border-surface pb-6">
+          <div
+            className="text-white font-bold leading-[0.9] break-words"
+            style={{
+              fontFamily: headingStack,
+              fontSize: 'clamp(64px, 12vw, 160px)',
+            }}
+          >
+            {sampleWord}
+          </div>
+          {headingFamily && (
+            <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-mint">
+              {headingFamily}
+            </span>
+          )}
+        </div>
+      )}
+
       <dl className="flex flex-col gap-3 text-[14px]">
         <Row label="Font stack"   value={system.fontStack} />
         <Row label="Heading font" value={system.headingFont} />
@@ -612,6 +746,71 @@ function Typography({ system }: Props): React.ReactElement {
           </div>
         </div>
       )}
+
+      {(system.headingFont || system.bodyFont) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <FontSpecCard
+            kind="HEADING"
+            name={system.headingFont}
+            family={headingFamily}
+            stack={headingStack}
+            rows={typeRows.filter((t) => /h[1-6]|display|heading|title/i.test(t.name))}
+          />
+          <FontSpecCard
+            kind="BODY"
+            name={system.bodyFont}
+            family={bodyFamily}
+            stack={bodyStack}
+            rows={typeRows.filter((t) => /body|p|text|caption|small/i.test(t.name))}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FontSpecCard({
+  kind,
+  name,
+  family,
+  stack,
+  rows,
+}: {
+  kind: string;
+  name: string | null;
+  family: string | null;
+  stack: string | undefined;
+  rows: TypeRow[];
+}): React.ReactElement {
+  return (
+    <div className="border border-surface rounded-md p-4 flex flex-col gap-2">
+      <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-mint">
+        {kind}
+      </span>
+      <span
+        className="text-white text-[22px] leading-tight"
+        style={{ fontFamily: stack }}
+      >
+        {family ?? name ?? '—'}
+      </span>
+      {name && (
+        <span className="font-mono text-[11px] text-text-secondary truncate">
+          {name}
+        </span>
+      )}
+      {rows.length > 0 && (
+        <ul className="flex flex-col gap-1 mt-2 font-mono text-[11px] text-text-secondary">
+          {rows.slice(0, 6).map((r, i) => (
+            <li key={`${r.name}-${i}`} className="flex justify-between gap-2">
+              <span className="uppercase tracking-[1.2px]">{r.name}</span>
+              <span>
+                {r.size}
+                {r.weight ? ` · ${r.weight}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -622,30 +821,18 @@ function Colours({ system }: Props): React.ReactElement {
   const tokenColors = parseTokenColors(system.designTokensJson);
 
   return (
-    <div className="flex flex-col gap-6">
-      <SwatchSection label="PRIMARY"   colors={system.primaryColors} />
-      <SwatchSection label="SECONDARY" colors={system.secondaryColors} />
-      <SwatchSection label="ACCENTS"   colors={system.accentColors} />
+    <div className="flex flex-col gap-8">
+      <WideSwatchSection label="PRIMARY"   colors={system.primaryColors} />
+      <WideSwatchSection label="SECONDARY" colors={system.secondaryColors} />
+      <WideSwatchSection label="ACCENTS"   colors={system.accentColors} />
       {tokenColors.length > 0 && (
         <div className="flex flex-col gap-3">
           <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
             TOKEN PALETTE
           </span>
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tokenColors.map((c, i) => (
-              <div key={`${c.name}-${i}`} className="flex flex-col gap-1.5 items-start">
-                <span
-                  aria-hidden
-                  className="w-20 h-20 rounded-md border border-surface"
-                  style={{ background: c.hex }}
-                />
-                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white">
-                  {c.name}
-                </span>
-                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
-                  {c.hex}
-                </span>
-              </div>
+              <WideSwatch key={`${c.name}-${i}`} hex={c.hex} name={c.name} />
             ))}
           </div>
         </div>
@@ -664,7 +851,64 @@ function Colours({ system }: Props): React.ReactElement {
   );
 }
 
-function SwatchSection({
+/**
+ * Approximate luminance per WCAG; picks black text on light swatches, white on
+ * dark. Accepts #rgb, #rrggbb, #rrggbbaa. Returns true if light-ish.
+ */
+function isLightHex(hex: string): boolean {
+  const cleaned = hex.replace('#', '').trim();
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (cleaned.length === 3) {
+    r = parseInt(cleaned[0]! + cleaned[0]!, 16);
+    g = parseInt(cleaned[1]! + cleaned[1]!, 16);
+    b = parseInt(cleaned[2]! + cleaned[2]!, 16);
+  } else if (cleaned.length >= 6) {
+    r = parseInt(cleaned.slice(0, 2), 16);
+    g = parseInt(cleaned.slice(2, 4), 16);
+    b = parseInt(cleaned.slice(4, 6), 16);
+  } else {
+    return false;
+  }
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return false;
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128;
+}
+
+function WideSwatch({
+  hex,
+  name,
+}: {
+  hex: string;
+  name?: string;
+}): React.ReactElement {
+  const dark = !isLightHex(hex);
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        className="min-h-[120px] rounded-md border border-surface p-4 flex items-end justify-between gap-3"
+        style={{ background: hex }}
+      >
+        <span
+          className={cn(
+            'font-mono uppercase tracking-[1.2px] text-[12px] font-bold',
+            dark ? 'text-white' : 'text-black',
+          )}
+        >
+          {hex}
+        </span>
+      </div>
+      {name && (
+        <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
+          {name}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function WideSwatchSection({
   label,
   colors,
 }: {
@@ -677,18 +921,9 @@ function SwatchSection({
       <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
         {label}
       </span>
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {colors.map((c, i) => (
-          <div key={`${c.hex}-${i}`} className="flex flex-col gap-1.5 items-start">
-            <span
-              aria-hidden
-              className="w-20 h-20 rounded-md border border-surface"
-              style={{ background: c.hex }}
-            />
-            <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
-              {c.hex}
-            </span>
-          </div>
+          <WideSwatch key={`${c.hex}-${i}`} hex={c.hex} name={c.type} />
         ))}
       </div>
     </div>

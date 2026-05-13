@@ -54,7 +54,10 @@ export function DesignSystemCard({
     },
   }[tone];
 
-  const swatches = item.primaryColors.slice(0, 3);
+  const swatches: string[] =
+    item.primaryColors.length > 0
+      ? item.primaryColors.slice(0, 3).map((c) => c.hex)
+      : item.tokenColorsPreview.slice(0, 3);
 
   return (
     <article
@@ -96,13 +99,13 @@ export function DesignSystemCard({
       {/* Swatches */}
       {swatches.length > 0 && (
         <div className="flex items-center gap-2 mb-4">
-          {swatches.map((c, i) => (
+          {swatches.map((hex, i) => (
             <span
-              key={`${c.hex}-${i}`}
+              key={`${hex}-${i}`}
               aria-hidden
               className={cn('w-6 h-6 rounded-full ring-1', toneStyles.swatchRing)}
-              style={{ background: c.hex }}
-              title={c.hex}
+              style={{ background: hex }}
+              title={hex}
             />
           ))}
         </div>

@@ -34,6 +34,12 @@ export interface DesignSystemListItem {
   headingFont: string | null;
   bodyFont: string | null;
   primaryColors: PrimaryColor[];
+  /**
+   * Up to 3 hex strings derived from `designTokensJson` when `primaryColors` is
+   * empty — gives the index card a colour-swatch fallback. Empty array when
+   * `primaryColors` already has data (the card prefers the explicit list).
+   */
+  tokenColorsPreview: string[];
   qualityScore: number | null;
   foundedYear: number | null;
   headquarters: string | null;
@@ -84,7 +90,43 @@ function toColors(v: unknown): PrimaryColor[] {
     .filter((x): x is PrimaryColor => x !== null);
 }
 
+const HEX_RE = /^#[0-9a-f]{3,8}$/i;
+
+/**
+ * Recursively pull up to 12 hex strings from an arbitrary JSON shape. Handles
+ * `{primary: "#xxx"}`, `{primary: {500: "#xxx"}}`, `{colors: [{hex: "#xxx"}]}`,
+ * arrays of strings, etc. Hex match is loose (3–8 hex chars after `#`).
+ */
+function extractHexes(v: unknown, out: string[] = []): string[] {
+  if (out.length >= 12) return out;
+  if (v == null) return out;
+  if (typeof v === 'string') {
+    const trimmed = v.trim();
+    if (HEX_RE.test(trimmed)) out.push(trimmed);
+    return out;
+  }
+  if (Array.isArray(v)) {
+    for (const item of v) {
+      if (out.length >= 12) break;
+      extractHexes(item, out);
+    }
+    return out;
+  }
+  if (typeof v === 'object') {
+    for (const val of Object.values(v as Record<string, unknown>)) {
+      if (out.length >= 12) break;
+      extractHexes(val, out);
+    }
+  }
+  return out;
+}
+
 function mapList(r: ResourceRow, d: DesignSystemRow): DesignSystemListItem {
+  const primaryColors = toColors(d.primaryColors);
+  const tokenColorsPreview =
+    primaryColors.length === 0
+      ? extractHexes(d.designTokensJson).slice(0, 3)
+      : [];
   return {
     slug: r.slug,
     name: r.name,
@@ -93,7 +135,8 @@ function mapList(r: ResourceRow, d: DesignSystemRow): DesignSystemListItem {
     tagline: r.tagline,
     headingFont: d.headingFont,
     bodyFont: d.bodyFont,
-    primaryColors: toColors(d.primaryColors),
+    primaryColors,
+    tokenColorsPreview,
     qualityScore: d.qualityScore,
     foundedYear: d.foundedYear,
     headquarters: d.headquarters,
