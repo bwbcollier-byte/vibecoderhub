@@ -27,6 +27,40 @@ function hasJson(v: unknown): boolean {
   return true;
 }
 
+/**
+ * Best-effort parse: returns the parsed value if `v` is a string that's
+ * valid JSON, the value itself if it's already an object/array, or `null`
+ * for everything else (including parse failures + empty strings). The
+ * caller decides whether to fall back to rendering the raw string.
+ */
+function tryParseJson(v: unknown): unknown {
+  if (v == null) return null;
+  if (typeof v === 'object') return v;
+  if (typeof v !== 'string') return null;
+  const trimmed = v.trim();
+  if (trimmed.length === 0) return null;
+  // Cheap pre-check — only attempt parse on strings that look JSON-ish.
+  // Avoids spamming console.warn on `font-family: 'Helvetica', …` declarations.
+  if (!/^[[{]/.test(trimmed)) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+}
+
+interface FontStackEntry {
+  name?: string;
+  type?: string;
+  origin?: string;
+  weights?: (number | string)[];
+}
+
+interface GradientEntry {
+  name?: string;
+  value?: string;
+}
+
 export function DesignSystemDetailTabs({ system }: Props): React.ReactElement {
   const panels = {
     overview: hasText(
@@ -341,19 +375,51 @@ function parseTokenColors(v: unknown): NamedColor[] {
  * Returns the non-`colors` top-level keys of designTokensJson, stringified
  * for a clean dl. Skips colors (rendered as swatches) and anything not parseable.
  */
+// Keys covered by other tabs / sections — never re-render here as a JSON
+// dl row inside the Tokens tab. Each one has a dedicated visual elsewhere
+// (Typography tab; the per-kind parsed token sections below).
+const TOKEN_EXTRA_SKIP = new Set([
+  'colors',
+  'typography',
+  'fonts',
+  'font',
+  'type',
+  'typeScale',
+  'type_scale',
+  'spacing',
+  'spacingScale',
+  'spacing_scale',
+  'radius',
+  'radii',
+  'radiusTokens',
+  'radius_tokens',
+  'shadow',
+  'shadows',
+  'shadowTokens',
+  'shadow_tokens',
+  'motion',
+  'motionTokens',
+  'motion_tokens',
+  'gradients',
+  'gradientLibrary',
+  'gradient_library',
+]);
+
 function tokenJsonExtras(v: unknown): { key: string; value: string }[] {
   if (v == null || typeof v !== 'object' || Array.isArray(v)) return [];
   const obj = v as Record<string, unknown>;
   const out: { key: string; value: string }[] = [];
   for (const [k, val] of Object.entries(obj)) {
-    if (k === 'colors') continue;
+    if (TOKEN_EXTRA_SKIP.has(k)) continue;
     if (val == null) continue;
+    // Only render scalars (string / number / boolean). Nested objects /
+    // arrays would dump as raw JSON — skip them rather than leak structure.
+    if (typeof val === 'object') continue;
     const str =
       typeof val === 'string'
         ? val
-        : typeof val === 'number' || typeof val === 'boolean'
-          ? String(val)
-          : JSON.stringify(val, null, 2);
+        : String(val);
+    if (str.trim().length === 0) continue;
     out.push({ key: k, value: str });
   }
   return out;
@@ -681,10 +747,10 @@ function Typography({ system }: Props): React.ReactElement {
       )}
 
       <dl className="flex flex-col gap-3 text-[14px]">
-        <Row label="Font stack"   value={system.fontStack} />
         <Row label="Heading font" value={system.headingFont} />
         <Row label="Body font"    value={system.bodyFont} />
       </dl>
+      <FontStackBlock value={system.fontStack} />
 
       {headingStack && (
         <div className="flex flex-col gap-2">
@@ -837,16 +903,7 @@ function Colours({ system }: Props): React.ReactElement {
           </div>
         </div>
       )}
-      {hasText(system.gradientLibrary) && (
-        <div className="flex flex-col gap-2">
-          <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
-            GRADIENT LIBRARY
-          </span>
-          <pre className="font-mono text-[12px] whitespace-pre-wrap p-4 bg-canvas-deep border border-surface rounded-md text-text-body overflow-x-auto">
-            {system.gradientLibrary}
-          </pre>
-        </div>
-      )}
+      <GradientLibraryBlock value={system.gradientLibrary} />
     </div>
   );
 }
@@ -1080,6 +1137,131 @@ function Row({
         {label}
       </dt>
       <dd className="text-white">{value ?? '—'}</dd>
+    </div>
+  );
+}
+
+/**
+ * Font stack renderer — handles both shapes that arrive from Airtable:
+ *   1. Plain string (CSS font-family declaration like
+ *      `'Helvetica Now Text', 'Inter', system-ui, …`) → render as mono line.
+ *   2. JSON array of `{name, type, origin, weights}` objects → render each
+ *      entry as a card with name + type/origin badges + weights.
+ * Returns null when no usable data so the parent can skip the section.
+ */
+function FontStackBlock({ value }: { value: string | null }): React.ReactElement | null {
+  if (!hasText(value)) return null;
+  const parsed = tryParseJson(value);
+
+  if (Array.isArray(parsed) && parsed.length > 0) {
+    const entries = parsed as FontStackEntry[];
+    return (
+      <div className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          FONT STACK
+        </span>
+        <ul className="flex flex-col gap-2">
+          {entries.map((e, i) => (
+            <li
+              key={`${e.name ?? 'font'}-${i}`}
+              className="flex flex-wrap items-center gap-3 border border-surface rounded-md p-3 bg-canvas-deep"
+            >
+              <span
+                className="text-[18px] text-white truncate"
+                style={{ fontFamily: e.name ? `"${e.name}", system-ui, sans-serif` : undefined }}
+              >
+                {e.name ?? '—'}
+              </span>
+              {e.type && (
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] font-bold text-mint">
+                  {e.type}
+                </span>
+              )}
+              {e.origin && (
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
+                  · {e.origin}
+                </span>
+              )}
+              {Array.isArray(e.weights) && e.weights.length > 0 && (
+                <span className="font-mono text-[10px] text-text-secondary ml-auto">
+                  {e.weights.join(', ')}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // Fallback: real string CSS font-family declaration.
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+        FONT STACK
+      </span>
+      <p className="font-mono text-[12px] text-text-body whitespace-pre-wrap">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Gradient library renderer — same dual-shape pattern as FontStackBlock.
+ *   1. JSON array of `{name, value}` → render each as a wide block with
+ *      the actual CSS gradient applied.
+ *   2. Plain string (CSS gradient declaration / prose) → render mono.
+ */
+function GradientLibraryBlock({ value }: { value: string | null }): React.ReactElement | null {
+  if (!hasText(value)) return null;
+  const parsed = tryParseJson(value);
+
+  if (Array.isArray(parsed) && parsed.length > 0) {
+    const entries = parsed as GradientEntry[];
+    const usable = entries.filter((e) => typeof e.value === 'string' && e.value.length > 0);
+    if (usable.length === 0) return null;
+    return (
+      <div className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          GRADIENT LIBRARY
+        </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {usable.map((g, i) => (
+            <div
+              key={`${g.name ?? 'gradient'}-${i}`}
+              className="flex flex-col gap-2"
+            >
+              <div
+                aria-hidden
+                className="min-h-[120px] rounded-md border border-surface"
+                style={{ background: g.value }}
+              />
+              <div className="flex flex-col gap-1">
+                {g.name && (
+                  <span className="font-mono uppercase tracking-[1.2px] text-[11px] font-bold text-white">
+                    {g.name}
+                  </span>
+                )}
+                <span className="font-mono text-[10px] text-text-secondary break-all">
+                  {g.value}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+        GRADIENT LIBRARY
+      </span>
+      <p className="font-mono text-[12px] text-text-body whitespace-pre-wrap">
+        {value}
+      </p>
     </div>
   );
 }
