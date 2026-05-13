@@ -1,7 +1,7 @@
 // Airtable design-systems ingest. 25th resource type.
 //
 // Source: base appbUpVCXkuPCOo6y, table tblwSnr8wvOeGnccv ("Design Systems").
-// 50K records total; we only ingest the 69 that have a populated System Prompt
+// 50K records total; we only ingest the 69 that have a populated Design Tokens JSON
 // field (the editorial bar — full brand profile + tokens + sample components).
 //
 // Each row maps to two rows in our DB:
@@ -87,7 +87,7 @@ async function main(): Promise<void> {
       do {
         await limiter.acquire();
         const url = new URL(`https://api.airtable.com/v0/${BASE}/${TABLE}`);
-        url.searchParams.set('filterByFormula', "NOT({System Prompt}='')");
+        url.searchParams.set('filterByFormula', "NOT({Design Tokens JSON}='')");
         url.searchParams.set('pageSize', '100');
         if (offset) url.searchParams.set('offset', offset);
 
@@ -115,8 +115,15 @@ async function main(): Promise<void> {
         const domain = asString(f['Domain']);
         const sourceUrl = domain;
         const slug = slugFromDomain(domain, name);
-        const description = asString(f['System Prompt']) ?? asString(f['Description']);
-        const tagline = asString(f['Description'])?.slice(0, 200) ?? null;
+        // Description = the human-readable company description. Prefer the
+        // Long Description (paragraph form) over the short Description (one-
+        // liner). NEVER fall back to Design Tokens JSON or System Prompt —
+        // those land in their own fields and would otherwise leak as raw JSON
+        // into the hero copy on the detail page.
+        const longDesc = asString(f['Long Description']);
+        const shortDesc = asString(f['Description']);
+        const description = longDesc ?? shortDesc;
+        const tagline = (shortDesc ?? longDesc)?.slice(0, 200) ?? null;
 
         const result = await upsertResource(ctx, {
           typeSlug: 'design_system',

@@ -210,16 +210,29 @@ export async function listDesignSystemSlugs(): Promise<string[]> {
   }, []);
 }
 
-export async function listDesignSystemIndustries(): Promise<string[]> {
+export interface IndustryFacet {
+  industry: string;
+  count: number;
+}
+
+/** Industries with ≥ 1 published design_system. Drops empty / null industries
+ *  so the filter pill row never shows a "ghost" pill with no records behind it.
+ *  Sorted by count desc so most-populated industries lead. */
+export async function listDesignSystemIndustries(): Promise<IndustryFacet[]> {
   return safeQuery(async () => {
     const rows = await db
-      .selectDistinct({ industry: designSystems.industry })
+      .select({
+        industry: designSystems.industry,
+        count: sql<number>`count(*)::int`,
+      })
       .from(resources)
       .innerJoin(designSystems, eq(designSystems.id, resources.id))
-      .where(baseWhere);
+      .where(baseWhere)
+      .groupBy(designSystems.industry);
     return rows
-      .map((r) => r.industry)
-      .filter((s): s is string => typeof s === 'string' && s.length > 0)
-      .sort();
+      .filter((r): r is { industry: string; count: number } =>
+        typeof r.industry === 'string' && r.industry.trim().length > 0 && r.count > 0,
+      )
+      .sort((a, b) => b.count - a.count || a.industry.localeCompare(b.industry));
   }, []);
 }

@@ -160,32 +160,381 @@ function CodeBlock({ label, text }: { label: string; text: string }): React.Reac
   );
 }
 
+// ──────────────────── Token parsing helpers ────────────────────
+
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+interface NamedColor { name: string; hex: string }
+interface RadiusToken { name: string; px: number }
+interface NamedValue { name: string; value: string }
+interface TypeRow {
+  name: string;
+  size: string;
+  weight?: string;
+  lineHeight?: string;
+  tracking?: string;
+}
+
+function asString(v: unknown): string | null {
+  if (typeof v === 'string') return v;
+  return null;
+}
+
+function parseRadiusTokens(v: unknown): RadiusToken[] {
+  const text = asString(v);
+  if (!text) return [];
+  const out: RadiusToken[] = [];
+  for (const ln of text.split(/\r?\n/)) {
+    const m = ln.match(/^\s*([\w-]+)\s*:\s*(\d+)\s*px/i);
+    if (m) out.push({ name: m[1]!, px: parseInt(m[2]!, 10) });
+  }
+  return out;
+}
+
+function parseShadowTokens(v: unknown): NamedValue[] {
+  const text = asString(v);
+  if (!text) return [];
+  const out: NamedValue[] = [];
+  for (const ln of text.split(/\r?\n/)) {
+    const trimmed = ln.trim();
+    if (!trimmed) continue;
+    const idx = trimmed.indexOf(':');
+    if (idx < 0) continue;
+    const name = trimmed.slice(0, idx).trim();
+    const value = trimmed.slice(idx + 1).trim();
+    if (name && value) out.push({ name, value });
+  }
+  return out;
+}
+
+function parseSpacingScale(v: unknown): number[] {
+  const text = asString(v);
+  if (!text) return [];
+  // Pull the "4, 8, 12,..." chunk before any parenthetical or descriptor.
+  const head = text.split(/[\n(]/)[0] ?? '';
+  const nums: number[] = [];
+  for (const m of head.matchAll(/\d+/g)) {
+    const n = parseInt(m[0], 10);
+    if (!Number.isNaN(n)) nums.push(n);
+  }
+  return nums;
+}
+
+function parseMotionTokens(v: unknown): NamedValue[] {
+  // Same shape as shadow.
+  return parseShadowTokens(v);
+}
+
+function parseTypeScale(v: unknown): TypeRow[] {
+  const text = asString(v);
+  if (!text) return [];
+  const out: TypeRow[] = [];
+  for (const ln of text.split(/\r?\n/)) {
+    const m = ln.match(
+      /^\s*([\w-]+)\s*:\s*(\d+(?:\.\d+)?(?:rem|px|em))\b(.*)$/i,
+    );
+    if (!m) continue;
+    const rest = m[3] ?? '';
+    const weight = rest.match(/weight\s+(\d{3})/i)?.[1];
+    const lh = rest.match(/(?:^|\/)\s*(\d+(?:\.\d+)?)(?:\s*\/|\s*$|\s+weight|\s+tracking)/i)?.[1];
+    const tracking = rest.match(/tracking\s+(-?\d+(?:\.\d+)?(?:em|px)?)/i)?.[1];
+    out.push({
+      name: m[1]!,
+      size: m[2]!,
+      weight,
+      lineHeight: lh,
+      tracking,
+    });
+  }
+  return out;
+}
+
+function flattenColors(v: unknown, prefix = ''): NamedColor[] {
+  const out: NamedColor[] = [];
+  if (v == null) return out;
+  if (typeof v === 'string') {
+    if (HEX_RE.test(v.trim())) out.push({ name: prefix || 'color', hex: v.trim() });
+    return out;
+  }
+  if (Array.isArray(v)) {
+    v.forEach((item, i) => {
+      const key = prefix ? `${prefix}-${i}` : String(i);
+      if (item && typeof item === 'object' && 'hex' in item && typeof (item as { hex: unknown }).hex === 'string') {
+        const name = (item as { name?: unknown }).name;
+        out.push({ name: typeof name === 'string' ? name : key, hex: (item as { hex: string }).hex });
+      } else {
+        out.push(...flattenColors(item, key));
+      }
+    });
+    return out;
+  }
+  if (typeof v === 'object') {
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      const next = prefix ? `${prefix}-${k}` : k;
+      out.push(...flattenColors(val, next));
+    }
+    return out;
+  }
+  return out;
+}
+
+function parseTokenColors(v: unknown): NamedColor[] {
+  if (v == null || typeof v !== 'object') return [];
+  const obj = v as Record<string, unknown>;
+  if ('colors' in obj) return flattenColors(obj.colors);
+  return [];
+}
+
+/**
+ * Returns the non-`colors` top-level keys of designTokensJson, stringified
+ * for a clean dl. Skips colors (rendered as swatches) and anything not parseable.
+ */
+function tokenJsonExtras(v: unknown): { key: string; value: string }[] {
+  if (v == null || typeof v !== 'object' || Array.isArray(v)) return [];
+  const obj = v as Record<string, unknown>;
+  const out: { key: string; value: string }[] = [];
+  for (const [k, val] of Object.entries(obj)) {
+    if (k === 'colors') continue;
+    if (val == null) continue;
+    const str =
+      typeof val === 'string'
+        ? val
+        : typeof val === 'number' || typeof val === 'boolean'
+          ? String(val)
+          : JSON.stringify(val, null, 2);
+    out.push({ key: k, value: str });
+  }
+  return out;
+}
+
 // ──────────────────── Tokens ────────────────────
 
 function Tokens({ system }: Props): React.ReactElement {
-  const sections: { label: string; value: unknown }[] = [
-    { label: 'DESIGN TOKENS',  value: system.designTokensJson },
-    { label: 'TYPE SCALE',     value: system.typeScale },
-    { label: 'SPACING SCALE',  value: system.spacingScale },
-    { label: 'RADIUS TOKENS',  value: system.radiusTokens },
-    { label: 'SHADOW TOKENS',  value: system.shadowTokens },
-    { label: 'MOTION TOKENS',  value: system.motionTokens },
-  ].filter((s) => hasJson(s.value));
+  const tokenColors = parseTokenColors(system.designTokensJson);
+  const extras = tokenJsonExtras(system.designTokensJson);
+  const typeRows = parseTypeScale(system.typeScale);
+  const spacing = parseSpacingScale(system.spacingScale);
+  const radii = parseRadiusTokens(system.radiusTokens);
+  const shadows = parseShadowTokens(system.shadowTokens);
+  const motions = parseMotionTokens(system.motionTokens);
 
-  return (
-    <div className="flex flex-col gap-6">
-      {sections.map((s) => (
-        <div key={s.label} className="flex flex-col gap-2">
-          <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
-            {s.label}
-          </span>
-          <pre className="font-mono text-[12px] whitespace-pre-wrap p-4 bg-canvas-deep border border-surface rounded-md text-text-body overflow-x-auto">
-            {typeof s.value === 'string' ? s.value : JSON.stringify(s.value, null, 2)}
-          </pre>
+  const sections: React.ReactNode[] = [];
+
+  if (tokenColors.length > 0 || extras.length > 0) {
+    sections.push(
+      <div key="design-tokens" className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          DESIGN TOKENS
+        </span>
+        {tokenColors.length > 0 && (
+          <div className="flex flex-wrap gap-4">
+            {tokenColors.map((c, i) => (
+              <div key={`${c.name}-${i}`} className="flex flex-col gap-1.5 items-start">
+                <span
+                  aria-hidden
+                  className="w-20 h-20 rounded-md border border-surface"
+                  style={{ background: c.hex }}
+                />
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white">
+                  {c.name}
+                </span>
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
+                  {c.hex}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {extras.length > 0 && (
+          <dl className="flex flex-col gap-2 mt-2">
+            {extras.map((e) => (
+              <div key={e.key} className="flex flex-col gap-1 border-b border-surface pb-2">
+                <dt className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
+                  {e.key}
+                </dt>
+                <dd className="font-mono text-[12px] whitespace-pre-wrap text-text-body">
+                  {e.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>,
+    );
+  }
+
+  if (typeRows.length > 0) {
+    const headingStack = system.headingFont ?? system.fontStack ?? undefined;
+    sections.push(
+      <div key="type-scale" className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          TYPE SCALE
+        </span>
+        <div className="flex flex-col gap-3">
+          {typeRows.map((t, i) => (
+            <div key={`${t.name}-${i}`} className="flex items-baseline gap-4 border-b border-surface pb-3">
+              <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary w-16 shrink-0">
+                {t.name}
+              </span>
+              <span
+                className="text-white"
+                style={{
+                  fontFamily: headingStack,
+                  fontSize: t.size,
+                  fontWeight: t.weight ? Number(t.weight) : undefined,
+                  lineHeight: t.lineHeight,
+                  letterSpacing: t.tracking,
+                }}
+              >
+                Quick brown fox jumps.
+              </span>
+              <span className="font-mono text-[10px] text-text-secondary ml-auto shrink-0">
+                {t.size}
+                {t.weight ? ` / ${t.weight}` : ''}
+                {t.lineHeight ? ` / ${t.lineHeight}` : ''}
+                {t.tracking ? ` / ${t.tracking}` : ''}
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
-  );
+      </div>,
+    );
+  }
+
+  if (spacing.length > 0) {
+    const max = Math.max(...spacing);
+    sections.push(
+      <div key="spacing" className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          SPACING SCALE
+        </span>
+        <div className="flex flex-col gap-2">
+          {spacing.map((n, i) => (
+            <div key={`${n}-${i}`} className="flex items-center gap-3">
+              <span className="font-mono text-[11px] text-text-secondary w-10 shrink-0 text-right">
+                {n}
+              </span>
+              <span
+                aria-hidden
+                className="bg-mint h-3 max-w-[280px] rounded-sm"
+                style={{ width: `${Math.min(n * 2, 280)}px` }}
+              />
+              <span className="font-mono text-[10px] text-text-secondary">
+                {n}px
+              </span>
+            </div>
+          ))}
+          <span className="font-mono text-[10px] text-text-secondary">
+            scale max: {max}
+          </span>
+        </div>
+      </div>,
+    );
+  }
+
+  if (radii.length > 0) {
+    sections.push(
+      <div key="radius" className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          RADIUS TOKENS
+        </span>
+        <div className="flex flex-wrap gap-4">
+          {radii.map((r, i) => (
+            <div key={`${r.name}-${i}`} className="flex flex-col gap-1.5 items-start">
+              <span
+                aria-hidden
+                className="w-16 h-16 border border-surface bg-canvas-deep"
+                style={{ borderRadius: `${r.px}px` }}
+              />
+              <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white">
+                {r.name}
+              </span>
+              <span className="font-mono text-[10px] text-text-secondary">
+                {r.px}px
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>,
+    );
+  }
+
+  if (shadows.length > 0) {
+    sections.push(
+      <div key="shadows" className="flex flex-col gap-3">
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          SHADOW TOKENS
+        </span>
+        <div className="flex flex-wrap gap-6">
+          {shadows.map((s, i) => (
+            <div key={`${s.name}-${i}`} className="flex flex-col gap-1.5 items-start">
+              <span
+                aria-hidden
+                className="w-32 h-20 rounded-md bg-canvas"
+                style={{ boxShadow: s.value }}
+              />
+              <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white">
+                {s.name}
+              </span>
+              <span className="font-mono text-[10px] text-text-secondary line-clamp-1 max-w-[160px]">
+                {s.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>,
+    );
+  }
+
+  if (motions.length > 0) {
+    sections.push(
+      <div key="motion" className="flex flex-col gap-3">
+        <style>{`
+          @keyframes ds-motion-pulse {
+            0%, 100% { opacity: 0.35; transform: scale(0.85); }
+            50%      { opacity: 1;    transform: scale(1.15); }
+          }
+        `}</style>
+        <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+          MOTION TOKENS
+        </span>
+        <div className="flex flex-col gap-2">
+          {motions.map((m, i) => {
+            const isDuration = /^duration[-_]/i.test(m.name);
+            return (
+              <div key={`${m.name}-${i}`} className="flex items-center gap-3 border-b border-surface py-2">
+                {isDuration ? (
+                  <span
+                    aria-hidden
+                    className="w-6 h-6 rounded-full bg-mint shrink-0"
+                    style={{ animation: `ds-motion-pulse ${m.value} ease-in-out infinite` }}
+                  />
+                ) : (
+                  <span aria-hidden className="w-6 h-6 shrink-0" />
+                )}
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white w-40 shrink-0">
+                  {m.name}
+                </span>
+                <span className="font-mono text-[11px] text-text-secondary">
+                  {m.value}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>,
+    );
+  }
+
+  if (sections.length === 0) {
+    return (
+      <p className="text-text-secondary text-[14px]">
+        No token data available.
+      </p>
+    );
+  }
+
+  return <div className="flex flex-col gap-8">{sections}</div>;
 }
 
 // ──────────────────── Typography ────────────────────
@@ -193,6 +542,7 @@ function Tokens({ system }: Props): React.ReactElement {
 function Typography({ system }: Props): React.ReactElement {
   const headingStack = system.headingFont ?? system.fontStack ?? undefined;
   const bodyStack = system.bodyFont ?? system.fontStack ?? undefined;
+  const typeRows = parseTypeScale(system.typeScale);
 
   return (
     <div className="flex flex-col gap-6">
@@ -226,6 +576,42 @@ function Typography({ system }: Props): React.ReactElement {
           </p>
         </div>
       )}
+
+      {typeRows.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+            TYPE SCALE
+          </span>
+          <div className="flex flex-col gap-3">
+            {typeRows.map((t, i) => (
+              <div
+                key={`${t.name}-${i}`}
+                className="flex items-baseline gap-4 border-b border-surface pb-3"
+              >
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary w-16 shrink-0">
+                  {t.name}
+                </span>
+                <span
+                  className="text-white"
+                  style={{
+                    fontFamily: headingStack ?? bodyStack,
+                    fontSize: t.size,
+                    fontWeight: t.weight ? Number(t.weight) : undefined,
+                    lineHeight: t.lineHeight,
+                    letterSpacing: t.tracking,
+                  }}
+                >
+                  Aa Quick brown fox.
+                </span>
+                <span className="font-mono text-[10px] text-text-secondary ml-auto shrink-0">
+                  {t.size}
+                  {t.weight ? ` / ${t.weight}` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -233,11 +619,37 @@ function Typography({ system }: Props): React.ReactElement {
 // ──────────────────── Colours ────────────────────
 
 function Colours({ system }: Props): React.ReactElement {
+  const tokenColors = parseTokenColors(system.designTokensJson);
+
   return (
     <div className="flex flex-col gap-6">
       <SwatchSection label="PRIMARY"   colors={system.primaryColors} />
       <SwatchSection label="SECONDARY" colors={system.secondaryColors} />
       <SwatchSection label="ACCENTS"   colors={system.accentColors} />
+      {tokenColors.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+            TOKEN PALETTE
+          </span>
+          <div className="flex flex-wrap gap-4">
+            {tokenColors.map((c, i) => (
+              <div key={`${c.name}-${i}`} className="flex flex-col gap-1.5 items-start">
+                <span
+                  aria-hidden
+                  className="w-20 h-20 rounded-md border border-surface"
+                  style={{ background: c.hex }}
+                />
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-white">
+                  {c.name}
+                </span>
+                <span className="font-mono uppercase tracking-[1.2px] text-[10px] text-text-secondary">
+                  {c.hex}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {hasText(system.gradientLibrary) && (
         <div className="flex flex-col gap-2">
           <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
@@ -286,13 +698,39 @@ function SwatchSection({
 // ──────────────────── Components ────────────────────
 
 function Components({ system }: Props): React.ReactElement {
+  const onCopyHtml = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(system.componentExamples ?? '');
+      toast.success('Copied!');
+    } catch {
+      toast.error('Copy failed');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {hasText(system.componentExamples) && (
         <div className="flex flex-col gap-2">
-          <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
-            EXAMPLES
-          </span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono uppercase tracking-[1.4px] text-[10px] font-bold text-text-secondary">
+              EXAMPLES
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                void onCopyHtml();
+              }}
+              className={cn(
+                'inline-flex items-center gap-1 cursor-pointer',
+                'font-mono uppercase tracking-[1.2px] text-[10px] font-bold',
+                'rounded-pill px-3 py-1.5 border border-surface text-text-secondary',
+                'hover:border-mint hover:text-mint transition-colors duration-base ease-out',
+              )}
+            >
+              <Icon.Copy size={12} />
+              Copy HTML
+            </button>
+          </div>
           {/*
            * Trust assumption: componentExamples comes from our editorial Airtable
            * (curated by us), not user submissions, so we render it as raw HTML.

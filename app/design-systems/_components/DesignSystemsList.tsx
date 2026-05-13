@@ -18,7 +18,7 @@ import { DesignSystemCard } from './DesignSystemCard';
 
 interface DesignSystemsListProps {
   initialItems: DesignSystemListItem[];
-  industries: string[];
+  industries: { industry: string; count: number }[];
   totalCount: number;
 }
 
@@ -129,12 +129,12 @@ export function DesignSystemsList({
           onClick={() => setIndustry(null)}
           label="ALL INDUSTRIES"
         />
-        {industries.map((i) => (
+        {industries.map(({ industry: i, count }) => (
           <PillButton
             key={i}
             active={industry === i}
             onClick={() => setIndustry(i)}
-            label={i.toUpperCase()}
+            label={`${i.toUpperCase()} · ${count}`}
           />
         ))}
       </div>
