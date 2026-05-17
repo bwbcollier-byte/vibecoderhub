@@ -18,6 +18,7 @@ import { Footer } from '@/components/layout/footer/Footer';
 import { MobileNav } from '@/components/layout/mobile-nav/MobileNav';
 import { StackBanner } from '@/components/layout/stack-banner/StackBanner';
 import { SkipLink } from '@/components/layout/skip-link/SkipLink';
+import { ReportIssueButton } from '@/components/report-issue-button';
 import type { ActiveStack } from '@/components/stack-context/StackProvider';
 
 const bebas = Bebas_Neue({
@@ -94,6 +95,7 @@ export default async function RootLayout({
           </main>
           <Footer />
           <MobileNav />
+          <ReportIssueButton />
         </Providers>
       </body>
     </html>
