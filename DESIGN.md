@@ -150,3 +150,19 @@ Base unit: 4px. All margins and paddings flow from multiples of this base.
 ## Scope Wall
 
 PromptKit is its own brand inside the Rascals portfolio. It does NOT inherit the Rascals admin token vocabulary (`ink-*` / `line-*` / `brand-blue` / `font-data`). It does NOT inherit hype.works pink or drop.limited pink. The mint+ultraviolet palette is distinct on purpose: if a user has multiple Rascals products open at once, PromptKit should be visually unmistakable.
+
+---
+
+## Documented Exceptions
+
+### 2026-05-19 — Migrations folder location (S5.6 exception)
+PromptKit migrations live at `app/db/migrations/` (`0001_initial.sql`, `0002_rate_limit_buckets.sql`, `0003_ingestion_runs.sql`), not the canonical `app/supabase/migrations/` path. The schema IS versioned per S5.6; the location differs because PromptKit predates the `_template/` standardisation. Migrations apply via `lib/migrate.ts` invocation rather than Supabase CLI.
+**Status:** Acceptable. Do NOT move to `supabase/migrations/` without testing migration-apply path first — silent move would break the apply mechanism.
+**Reviewer:** Wong, Howard.
+**Re-evaluate:** if/when PromptKit moves to native Supabase migrations (>2 hours of refactor work).
+
+### 2026-05-17 — `#ffffff` as text-primary
+Open Question above. Acceptable in v1; revisit during polish.
+
+### 2026-05-17 — Space Mono as data face
+See decisions.md. Acceptable exception to portfolio JetBrains Mono default.

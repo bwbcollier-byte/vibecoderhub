@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -51,4 +52,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// S6.2 — Sentry wrap. DSN from env.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || 'promptkit',
+  project: process.env.SENTRY_PROJECT || 'javascript-nextjs',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: { enabled: true },
+  tunnelRoute: '/monitoring',
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+});
